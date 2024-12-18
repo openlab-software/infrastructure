@@ -9,3 +9,4 @@ services:
       - "443:443"
     volumes:
       - /etc/nginx:/etc/nginx:rw
+      - /usr/share/nginx:/usr/share/nginx
