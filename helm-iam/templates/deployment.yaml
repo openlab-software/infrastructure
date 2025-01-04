@@ -18,3 +18,11 @@ spec:
         ports:
         - containerPort: {{ .Values.deployment.mainContainer.port }}  
         {{- if .Values.checkHealth}}{{- include "livenessProbe" . | indent 8}}{{ end }}
+      #   volumeMounts:
+      #     - name: config-volume
+      #       mountPath: /home/wso2carbon/wso2am-4.0.0/repository/resources/conf/deployment.toml
+      #       subPath: deployment.toml
+      # volumes:
+      #   - name: config-volume
+      #     configMap:
+      #       name: wso2-is-config

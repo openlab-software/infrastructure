@@ -10,8 +10,11 @@ service :
   port : 9443
   portName: https
 
-
 ingress :
-  host1 : dev.patrick.dev.br
+  host1 : account.patrick.dev.br
 
 checkHealth : false
+
+config:
+  server:
+    hostname: "account.patrick.dev.br"

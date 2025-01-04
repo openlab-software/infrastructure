@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wso2-is-config
+data:
+  deployment.toml: |
+    [oauth.endpoints]
+    authorization_endpoint = "https://{{ .Values.config.server.hostname }}/oauth2/authorize"
+    token_endpoint = "https://{{ .Values.config.server.hostname }}/oauth2/token"
+
+    [console]
+    hostname = "{{ .Values.config.server.hostname }}"
+
+    [myaccount]
+    hostname = "{{ .Values.config.server.hostname }}"
