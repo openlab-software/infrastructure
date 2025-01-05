@@ -17,4 +17,4 @@ checkHealth : false
 
 config:
   server:
-    hostname: "account.patrick.dev.br"
+    hostname: account.patrick.dev.br
