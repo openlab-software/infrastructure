@@ -5,7 +5,7 @@ locals {
   onboot       = true
   proxmox_node = "master"
   scsihw       = "virtio-scsi-pci"
-  template     = "ubuntu-2204-cloud-init"
+  template     = "ubuntu-2404-cloud-init"
 
   bridge = {
     interface = "vmbr0"
@@ -50,8 +50,8 @@ locals {
 
     # hardware info
     cores     = 2
-    disk_size = "110G"
-    memory    = 2048
+    disk_size = "110G" # mesmo tamanho ou maior do que o template do cloudinit
+    memory    = 3072
     sockets   = 1
 
     # 192.168.0.7x and so on...
@@ -66,9 +66,9 @@ locals {
     name_prefix = "k8s-worker"
     vmid_prefix = 400
 
-    cores     = 2
+    cores     = 3
     disk_size = "110G"
-    memory    = 4096
+    memory    = 4608
     sockets   = 2
 
     network_last_octect = 90
