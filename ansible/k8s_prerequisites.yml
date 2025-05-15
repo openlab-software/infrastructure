@@ -1,0 +1,130 @@
+# ---
+# - name: Preparar servidores Ubuntu para Kubernetes
+#   hosts: all
+#   become: yes
+
+#   vars:
+#     kubernetes_apt_key_url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+#     kubernetes_apt_repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+
+#   tasks:
+#     - name: Atualizar pacotes do sistema
+#       apt:
+#         update_cache: yes
+#         upgrade: dist
+
+#     - name: Desativar swap permanentemente
+#       replace:
+#         path: /etc/fstab
+#         regexp: '^([^#].*?\sswap\s.*)$'
+#         replace: '# \1'
+
+#     - name: Instalar pacotes necessários
+#       apt:
+#         name:
+#           - apt-transport-https
+#           - ca-certificates
+#           - curl
+#           - gnupg
+#           - lsb-release
+#           - containerd
+#         state: present
+#         update_cache: yes
+
+#     - name: Criar diretório /etc/containerd se não existir
+#       file:
+#         path: /etc/containerd
+#         state: directory
+#         mode: "0755"
+
+#     - name: Gerar arquivo de configuração padrão do containerd
+#       shell: |
+#         containerd config default > /etc/containerd/config.toml
+#       args:
+#         creates: /etc/containerd/config.toml
+
+#     - name: Ajustar cgroup driver para systemd no containerd
+#       replace:
+#         path: /etc/containerd/config.toml
+#         regexp: "SystemdCgroup = false"
+#         replace: "SystemdCgroup = true"
+
+#     - name: Reiniciar containerd
+#       systemd:
+#         name: containerd
+#         state: restarted
+#         enabled: yes
+
+#     - name: Adicionar chave GPG do Kubernetes
+#       apt_key:
+#         url: "{{ kubernetes_apt_key_url }}"
+#         state: present
+
+#     - name: Adicionar repositório do Kubernetes
+#       apt_repository:
+#         repo: "{{ kubernetes_apt_repo }}"
+#         state: present
+#         filename: kubernetes
+
+#     - name: Atualizar cache de pacotes após adicionar repositório
+#       apt:
+#         update_cache: yes
+
+#     - name: Instalar kubelet, kubeadm e kubectl
+#       apt:
+#         name:
+#           - kubelet
+#           - kubeadm
+#           - kubectl
+#         state: present
+
+#     - name: Impedir atualizações automáticas do kubelet, kubeadm e kubectl
+#       apt:
+#         name:
+#           - kubelet
+#           - kubeadm
+#           - kubectl
+#         state: hold
+
+#     - name: Ativar módulos do kernel necessários
+#       shell: |
+#         modprobe overlay
+#         modprobe br_netfilter
+#       args:
+#         warn: false
+
+#     - name: Garantir que os módulos sejam carregados no boot
+#       copy:
+#         dest: /etc/modules-load.d/k8s.conf
+#         content: |
+#           overlay
+#           br_netfilter
+#           nf_nat
+#           xt_REDIRECT
+#           xt_owner
+#           iptable_nat
+#           iptable_mangle
+#           iptable_filter
+
+#     - name: Configurar parâmetros sysctl para Kubernetes
+#       copy:
+#         dest: /etc/sysctl.d/k8s.conf
+#         content: |
+#           net.bridge.bridge-nf-call-iptables  = 1
+#           net.bridge.bridge-nf-call-ip6tables = 1
+#           net.ipv4.ip_forward                 = 1
+
+#     - name: Aplicar configurações sysctl
+#       command: sysctl --system
+
+#     - name: Habilitar e iniciar o containerd
+#       systemd:
+#         name: containerd
+#         enabled: yes
+#         state: started
+
+#     - name: Habilitar e iniciar o kubelet
+#       systemd:
+#         name: kubelet
+#         enabled: yes
+#         state: started

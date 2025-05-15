@@ -35,7 +35,6 @@ variable "pfsense_iso" {
   description = "path to .iso. e.g.: 'local:iso/pfSense-CE-2.7.1-RELEASE-amd64.iso'"
 }
 
-
 variable "cloudinit_template" {
   type    = string
   default = "ubuntu-2404-cloud-init"

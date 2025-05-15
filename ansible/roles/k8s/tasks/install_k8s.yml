@@ -1,0 +1,27 @@
+---
+- name: Add k8s apt key
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: Add k8s repository
+  apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+    update_cache: yes
+
+- name: Install k8s packages
+  become: true
+  apt:
+    state: present
+    force: yes
+    mark_hold: true
+    update_cache: true
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+  
+
+- name: Disable swap
+  command: swapoff -a

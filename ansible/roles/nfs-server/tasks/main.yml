@@ -1,0 +1,41 @@
+---
+- name: Configurar servidor NFS
+  hosts: nfs-servers
+  become: yes
+  vars:
+    nfs_dir: "/srv/nfs/vm-storage"
+    allowed_network: "10.0.0.0/24"
+
+  tasks:
+    - name: Atualizar os pacotes
+      apt:
+        update_cache: yes
+
+    - name: Instalar o NFS Kernel Server
+      apt:
+        name: nfs-kernel-server
+        state: present
+
+    - name: Criar diretório compartilhado
+      file:
+        path: "{{ nfs_dir }}"
+        state: directory
+        owner: nobody
+        group: nogroup
+        mode: "0777"
+
+    - name: Garantir entrada no /etc/exports
+      lineinfile:
+        path: /etc/exports
+        line: "{{ nfs_dir }} {{ allowed_network }}(rw,sync,no_subtree_check,no_root_squash)"
+        create: yes
+        state: present
+
+    - name: Aplicar exportações NFS
+      command: exportfs -ra
+
+    - name: Habilitar e iniciar o serviço NFS
+      systemd:
+        name: nfs-server
+        enabled: yes
+        state: started
