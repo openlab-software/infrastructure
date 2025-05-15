@@ -1,16 +1,17 @@
 locals {
   # global configurations
   agent        = 1
-  cidr         = "192.168.0.0/24"
+  cidr         = var.lan_cidr
   onboot       = true
   proxmox_node = "master"
   scsihw       = "virtio-scsi-pci"
-  template     = "ubuntu-2404-cloud-init"
+  template     = var.cloudinit_template
 
   bridge = {
-    interface = "vmbr0"
+    interface = var.lan_bridge
     model     = "virtio"
   }
+
   disks = {
     main = {
       backup  = true
@@ -41,25 +42,22 @@ locals {
     ssh_public_key = file("id_rsa.pub")
   }
 
-  # master specific configuration
   masters = {
     count = 3
 
     name_prefix = "k8s-master"
     vmid_prefix = 300
 
-    # hardware info
     cores     = 2
-    disk_size = "110G" # mesmo tamanho ou maior do que o template do cloudinit
+    disk_size = "110G" # same or higher size of cloudinit template
     memory    = 3072
     sockets   = 1
 
     # 192.168.0.7x and so on...
-    network_last_octect = 70
+    network_last_octect = 20
     tags                = "masters"
   }
 
-  # worker specific configuration
   workers = {
     count = 3
 
@@ -71,7 +69,7 @@ locals {
     memory    = 4608
     sockets   = 2
 
-    network_last_octect = 90
+    network_last_octect = 30
     tags                = "workers"
   }
 }

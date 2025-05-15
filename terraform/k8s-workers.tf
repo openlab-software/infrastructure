@@ -1,11 +1,11 @@
-resource "proxmox_vm_qemu" "masters" {
-  count = local.masters.count
+resource "proxmox_vm_qemu" "k8s-workers" {
+  count = local.workers.count
 
   target_node = local.proxmox_node
-  vmid        = local.masters.vmid_prefix + count.index
+  vmid        = local.workers.vmid_prefix + count.index
   name = format(
     "%s-%s",
-    local.masters.name_prefix,
+    local.workers.name_prefix,
     count.index
   )
 
@@ -13,9 +13,9 @@ resource "proxmox_vm_qemu" "masters" {
   clone  = local.template
   agent  = local.agent
 
-  cores   = local.masters.cores
-  sockets = local.masters.sockets
-  memory  = local.masters.memory
+  cores   = local.workers.cores
+  sockets = local.workers.sockets
+  memory  = local.workers.memory
 
   ciuser  = local.cloud_init.user
   sshkeys = local.cloud_init.ssh_public_key
@@ -23,7 +23,7 @@ resource "proxmox_vm_qemu" "masters" {
     "ip=%s/24,gw=%s",
     cidrhost(
       local.cidr,
-      local.masters.network_last_octect + count.index
+      local.workers.network_last_octect + count.index
     ),
     cidrhost(local.cidr, 1)
   )
@@ -54,12 +54,12 @@ resource "proxmox_vm_qemu" "masters" {
     format  = local.disks.main.format
     type    = local.disks.main.type
     storage = local.disks.main.storage
-    size    = local.masters.disk_size
+    size    = local.workers.disk_size
     slot    = local.disks.main.slot
     discard = local.disks.main.discard
   }
 
-  tags = local.masters.tags
+  tags = local.workers.tags
 
   connection {
     type        = "ssh"
@@ -67,7 +67,7 @@ resource "proxmox_vm_qemu" "masters" {
     private_key = file("id_rsa")
     host = cidrhost(
       local.cidr,
-      local.masters.network_last_octect + count.index
+      local.workers.network_last_octect + count.index
     )
   }
 
