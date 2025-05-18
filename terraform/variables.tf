@@ -30,7 +30,7 @@ variable "lan_cidr" {
   default     = "10.0.0.0/24"
 }
 
-variable "pfsense_iso" {
+variable "firewall_iso" {
   type        = string
   description = "path to .iso. e.g.: 'local:iso/pfSense-CE-2.7.1-RELEASE-amd64.iso'"
 }

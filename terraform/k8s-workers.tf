@@ -17,8 +17,9 @@ resource "proxmox_vm_qemu" "k8s-workers" {
   sockets = local.workers.sockets
   memory  = local.workers.memory
 
-  ciuser  = local.cloud_init.user
-  sshkeys = local.cloud_init.ssh_public_key
+  ciuser     = local.cloud_init.user
+  cipassword = local.cloud_init.password
+  # sshkeys    = local.cloud_init.ssh_public_key
   ipconfig0 = format(
     "ip=%s/24,gw=%s",
     cidrhost(
@@ -61,19 +62,19 @@ resource "proxmox_vm_qemu" "k8s-workers" {
 
   tags = local.workers.tags
 
-  connection {
-    type        = "ssh"
-    user        = local.cloud_init.user
-    private_key = file("id_rsa")
-    host = cidrhost(
-      local.cidr,
-      local.workers.network_last_octect + count.index
-    )
-  }
+  # connection {
+  #   type        = "ssh"
+  #   user        = local.cloud_init.user
+  #   private_key = file("~/.ssh/id_rsa")
+  #   host = cidrhost(
+  #     local.cidr,
+  #     local.workers.network_last_octect + count.index
+  #   )
+  # }
 
-  provisioner "remote-exec" {
-    inline = [
-      "cloud-init status --wait"
-    ]
-  }
+  # provisioner "remote-exec" {
+  #   inline = [
+  #     "cloud-init status --wait"
+  #   ]
+  # }
 }

@@ -3,7 +3,7 @@ locals {
   agent        = 1
   cidr         = var.lan_cidr
   onboot       = true
-  proxmox_node = "master"
+  proxmox_node = "pve"
   scsihw       = "virtio-scsi-pci"
   template     = var.cloudinit_template
 
@@ -17,7 +17,7 @@ locals {
       backup  = true
       format  = "raw"
       type    = "disk"
-      storage = "local-lvm"
+      storage = "os"
       slot    = "scsi0"
       discard = true
     }
@@ -25,11 +25,11 @@ locals {
       backup  = true
       format  = "raw"
       type    = "cloudinit"
-      storage = "local-lvm"
+      storage = "os"
       slot    = "ide2"
     }
   }
-  # serial is needed to connect via WebGUI console
+  # # serial is needed to connect via WebGUI console
   serial = {
     id   = 0
     type = "socket"
@@ -39,17 +39,17 @@ locals {
   cloud_init = {
     user           = "ubuntu"
     password       = "ubuntu"
-    ssh_public_key = file("id_rsa.pub")
+    ssh_public_key = file("~/.ssh/id_rsa.pub")
   }
 
   masters = {
-    count = 3
+    count = 1
 
     name_prefix = "k8s-master"
     vmid_prefix = 300
 
     cores     = 2
-    disk_size = "110G" # same or higher size of cloudinit template
+    disk_size = "32G" # same or higher size of cloudinit template
     memory    = 3072
     sockets   = 1
 
@@ -59,13 +59,13 @@ locals {
   }
 
   workers = {
-    count = 3
+    count = 1
 
     name_prefix = "k8s-worker"
     vmid_prefix = 400
 
     cores     = 3
-    disk_size = "110G"
+    disk_size = "32G"
     memory    = 4608
     sockets   = 2
 
