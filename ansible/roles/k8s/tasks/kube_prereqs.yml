@@ -16,7 +16,29 @@
     content: |
       overlay
       br_netfilter
-  become: true
+      nf_nat
+      xt_REDIRECT
+      xt_owner
+      iptable_nat
+      iptable_mangle
+      iptable_filter
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Load kernel modules to K8S/Containerd
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+    - nf_nat
+    - xt_REDIRECT
+    - xt_owner
+    - iptable_nat
+    - iptable_mangle
+    - iptable_filter
 
 - name: Apply sysctl settings
   sysctl:

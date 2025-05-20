@@ -1,23 +1,22 @@
 - name: Install k8s
-  become: yes
-  hosts: tag_name_k8s
+  hosts: k8s
+  become: true
   roles:
     - k8s
 
 - name: Setup k8s master node
-  become: yes
-  hosts: tag_type_master
+  hosts: k8s-master
+  become: true
   roles:
     - k8s-master
 
 - name: Setup k8s worker node
-  become: yes
-  hosts: tag_type_worker
+  hosts: k8s-worker
+  become: true
   roles:
     - k8s-worker
 
-- name: Setup NFS server
-  become: yes
-  hosts: tag_type_worker
-  roles:
-    - nfsserver
+# - name: Setup NFS server
+#   hosts: tag_type_worker
+#   roles:
+#     - nfsserver

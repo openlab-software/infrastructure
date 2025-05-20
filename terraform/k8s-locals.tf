@@ -39,7 +39,7 @@ locals {
   cloud_init = {
     user           = "ubuntu"
     password       = "ubuntu"
-    ssh_public_key = file("~/.ssh/id_rsa.pub")
+    ssh_public_key = file("~/.ssh/id_ed25519.pub")
   }
 
   masters = {

@@ -2,5 +2,12 @@
 - name: Copy join to nodes
   command: "{{ hostvars[groups[]]  }}"
 
-- name: Run command on remote
-  shell: /opt/kubejoin.sh
+
+# - name: Copy join to nodes
+#   copy:
+#     dest: /opt/kubejoin.sh
+#     src: ./join/kubejoin.sh
+#     mode: "0700"
+
+# - name: Run command on remote
+#   shell: /opt/kubejoin.sh
