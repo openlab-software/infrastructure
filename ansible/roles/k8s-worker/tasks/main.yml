@@ -1,6 +1,6 @@
 ---
-- name: Copy join to nodes
-  command: "{{ hostvars[groups[]]  }}"
+# - name: Copy join to nodes
+#   command: "{{ hostvars[groups[]]  }}"
 
 
 # - name: Copy join to nodes

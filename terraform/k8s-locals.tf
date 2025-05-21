@@ -37,9 +37,10 @@ locals {
 
   # cloud init information to be injected
   cloud_init = {
-    user           = "ubuntu"
-    password       = "ubuntu"
-    ssh_public_key = file("~/.ssh/id_ed25519.pub")
+    user            = "ubuntu"
+    password        = "ubuntu"
+    ssh_public_key  = file("~/.ssh/id_ed25519.pub")
+    ssh_private_key = file("~/.ssh/id_ed25519")
   }
 
   masters = {

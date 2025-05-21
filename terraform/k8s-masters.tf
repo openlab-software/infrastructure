@@ -19,7 +19,13 @@ resource "proxmox_vm_qemu" "k8s-masters" {
 
   ciuser     = local.cloud_init.user
   cipassword = local.cloud_init.password
-  sshkeys    = local.cloud_init.ssh_public_key
+
+  ssh_user = "ubuntu"
+  os_type  = "cloud-init"
+
+  ssh_private_key = local.cloud_init.ssh_private_key
+  sshkeys         = local.cloud_init.ssh_public_key
+
   ipconfig0 = format(
     "ip=%s/24,gw=%s",
     cidrhost(
