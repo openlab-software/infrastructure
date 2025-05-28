@@ -1,19 +1,18 @@
 ---
+
 - name: Add Kubernetes apt-key
   get_url:
     url: https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key
-    dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
-    mode: "0644"
-    force: true
+    dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    mode: '0644'
 
-- name: Add k8s repository
-  apt_repository:
-    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /"
-    state: present
-    update_cache: yes
+- name: Adicionar repositório do Kubernetes
+  copy:
+    dest: /etc/apt/sources.list.d/kubernetes.list
+    content: |
+      deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /
 
 - name: Install k8s packages
-  become: true
   apt:
     state: present
     force: yes
@@ -23,5 +22,16 @@
       - kubeadm
       - kubectl
 
-- name: Disable swap
-  command: swapoff -a
+- name: Impedir atualização do Kubernetes
+  apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: hold
+
+- name: Ativar kubelet
+  systemd:
+    name: kubelet
+    enabled: true
+    state: started

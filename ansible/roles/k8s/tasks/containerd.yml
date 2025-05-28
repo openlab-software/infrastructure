@@ -12,25 +12,52 @@
     - lsb-release
     - nfs-common
     - chrony
-  become: true
 
 - name: Add GPG key
   get_url:
     url: https://download.docker.com/linux/ubuntu/gpg
-    dest: /etc/apt/keyrings/docker-apt-keyring.asc
-    mode: "0644"
-    force: true
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
 
 - name: Add Docker's APT repo
-  apt_repository:
-    repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/etc/apt/keyrings/docker-apt-keyring.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
-    update_cache: yes
+  copy:
+    mode: '0644'
+    dest: /etc/apt/sources.list.d/docker.list
+    content: |
+      deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
+
+- name: Update cache
+  become: true
+  command: sudo apt-get update
 
 - name: Install Docker
+  become: true
   apt:
     name: "{{ item }}"
+    update_cache: true
   with_items:
     - docker-ce
     - docker-ce-cli
     - containerd.io
+
+- name: Criar arquivo de configuração do containerd
+  command: containerd config default
+  register: containerd_config
+
+- name: Salvar configuração do containerd
+  copy:
+    dest: /etc/containerd/config.toml
+    content: "{{ containerd_config.stdout }}"
+    mode: '0644'
+
+- name: Ajustar SystemdCgroup = true no containerd
+  replace:
+    path: /etc/containerd/config.toml
+    regexp: 'SystemdCgroup = false'
+    replace: 'SystemdCgroup = true'
+
+- name: Ativar containerd
+  systemd:
+    name: containerd
+    enabled: true
+    state: started
