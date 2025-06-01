@@ -1,4 +1,7 @@
 ---
+- name: Setup DNS
+  include_tasks: dns.yml
+
 - name: Do prerequisites
   include_tasks: kube_prereqs.yml
 

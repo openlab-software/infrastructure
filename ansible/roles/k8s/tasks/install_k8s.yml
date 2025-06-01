@@ -1,37 +1,44 @@
 ---
+- name: Add an apt signing key for Kubernetes
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
 
 - name: Add Kubernetes apt-key
   get_url:
-    url: https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key
-    dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-    mode: '0644'
+    url: https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key
+    dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
+    mode: "0644"
+    force: true
 
-- name: Adicionar repositório do Kubernetes
-  copy:
-    dest: /etc/apt/sources.list.d/kubernetes.list
-    content: |
-      deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /
-
-- name: Install k8s packages
-  apt:
+- name: Add Kubernetes APT repository
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /"
     state: present
-    force: yes
-    update_cache: true
-    name:
-      - kubelet
-      - kubeadm
+    update_cache: yes
+
+- name: Install Kubernetes binaries
+  apt: 
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+      - kubelet 
+      - kubeadm 
       - kubectl
 
 - name: Impedir atualização do Kubernetes
   apt:
     name:
-      - kubelet
-      - kubeadm
-      - kubectl
-    state: hold
+      - kubelet=1.29.*
+      - kubeadm=1.29.*
+      - kubectl=1.29.*
+    state: fixed
 
-- name: Ativar kubelet
-  systemd:
+- name: Restart kubelet
+  service:
     name: kubelet
-    enabled: true
-    state: started
+    daemon_reload: yes
+    state: restarted
+

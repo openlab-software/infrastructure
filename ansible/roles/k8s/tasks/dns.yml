@@ -1,0 +1,15 @@
+---
+- name: Definir configuração Netplan com DNS do Google
+  copy:
+    dest: /etc/netplan/01-netcfg.yaml
+    content: |
+      network:
+        version: 2
+        ethernets:
+          eth0:
+            dhcp4: yes
+            nameservers:
+              addresses: [8.8.8.8, 8.8.4.4]
+
+- name: Apply DNS
+  command: netplan apply
