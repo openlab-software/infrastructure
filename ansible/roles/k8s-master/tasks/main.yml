@@ -1,5 +1,5 @@
-# - name: Destroy cluster before starting again
-#   command: kubeadm reset -f
+- name: Destroy cluster before starting again
+  command: kubeadm reset -f
 
 - name: Initialize k8s cluster
   command: kubeadm init

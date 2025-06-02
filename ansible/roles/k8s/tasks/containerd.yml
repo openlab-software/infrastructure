@@ -52,4 +52,18 @@
   systemd:
     name: containerd
     enabled: true
-    state: started
+    state: restarted
+
+- name: Garantir que o grupo docker existe
+  group:
+    name: docker
+    state: present
+
+- name: Adicionar usuario ao grupo docker
+  user:
+    name: "{{ ansible_user | default('ubuntu') }}"
+    groups: docker
+    append: yes
+
+- name: Recarregar o systemd (daemon-reexec)
+  command: systemctl daemon-reexec
