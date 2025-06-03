@@ -44,7 +44,7 @@ locals {
   }
 
   masters = {
-    count = 2
+    count = 3
 
     name_prefix = "k8s-master"
     vmid_prefix = 300
@@ -60,7 +60,7 @@ locals {
   }
 
   workers = {
-    count = 1
+    count = 3
 
     name_prefix = "k8s-worker"
     vmid_prefix = 400

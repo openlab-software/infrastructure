@@ -68,20 +68,4 @@ resource "proxmox_vm_qemu" "k8s-masters" {
   }
 
   tags = local.masters.tags
-  # connection {
-  #   type        = "ssh"
-  #   user        = local.cloud_init.user
-  #   private_key = file("~/.ssh/id_ed25519")
-  #   host = cidrhost(
-  #     local.cidr,
-  #     local.workers.network_last_octect + count.index
-  #   )
-  # }
-
-  # provisioner "remote-exec" {
-  #   inline = [
-  #     "cloud-init status --wait"
-  #   ]
-  # }
-
 }

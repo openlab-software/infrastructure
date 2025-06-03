@@ -1,22 +1,69 @@
 ---
 - name: Create config directory
   file:
-    path: /opt/nginx-k8s-proxy
+    path: /opt/nginx-proxy
     state: directory
 
 - name: Copy Nginx config
   copy:
     src: files/nginx.conf
-    dest: "{{ nginx_conf_path }}"
+    dest: /opt/nginx-proxy/nginx.conf
     mode: '0644'
 
 - name: Run Nginx container
   docker_container:
-    name: "{{ nginx_container_name }}"
+    name: nginx-proxy
     image: nginx:latest
     state: started
     restart_policy: always
     ports:
       - "6443:6443"
     volumes:
-      - "{{ nginx_conf_path }}:/etc/nginx/nginx.conf:ro"
+      - "/opt/nginx-proxy/nginx.conf:/etc/nginx/nginx.conf:ro"
+
+- name: Create pihole config directory
+  file:
+    path: /opt/pihole
+    state: directory
+    
+- name: Ajustar resolved
+  replace:
+    path: /etc/systemd/resolved.conf
+    regexp: '#DNSStubListener=yes'
+    replace: 'DNSStubListener=no'
+
+- name: Remove /etc/resolv.conf se existir
+  file:
+    path: /etc/resolv.conf
+    state: absent
+
+- name: Cria o symlink de resolv.conf
+  file:
+    src: /run/systemd/resolve/resolv.conf
+    dest: /etc/resolv.conf
+    state: link
+
+- name: Para o systemd-resolved
+  systemd:
+    name: systemd-resolved
+    state: restarted
+
+- name: Run Pihole container
+  docker_container:
+    name: pihole
+    image: pihole/pihole:latest
+    state: started
+    restart_policy: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "443:443/tcp"
+      - "80:80"
+    env:
+      TZ: America/Sao_Paulo
+      WEBPASSWORD: admin
+    volumes:
+      - "/opt/pihole:/etc/pihole"
+      - "/opt/dnsmasq.d:/etc/dnsmasq.d"
+    capabilities:
+      - NET_ADMIN

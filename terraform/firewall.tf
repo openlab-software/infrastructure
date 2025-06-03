@@ -1,43 +1,57 @@
-# resource "proxmox_vm_qemu" "firewall" {
-#   name        = "OPNSense"
+# resource "proxmox_vm_qemu" "proxy" {
 #   target_node = "pve"
+#   vmid        = 200
+#   name        = "proxy"
 
-#   cores   = 4
-#   memory  = 5120
-#   sockets = 1
-#   scsihw  = "virtio-scsi-pci"
-#   boot    = "order=ide2;scsi0"
-#   onboot  = true
+#   onboot = true
+#   clone  = var.cloudinit_template
+#   agent  = 1
 
-#   disks {
-#     scsi {
-#       scsi0 {
-#         disk {
-#           size    = "32G"
-#           storage = "os"
-#         }
-#       }
-#     }
-#     ide {
-#       ide2 {
-#         cdrom {
-#           iso = var.firewall_iso
-#         }
-#       }
-#     }
-#   }
+#   cores   = 2
+#   memory  = 4608
+#   sockets = 2
+
+#   ciuser          = "ubuntu"
+#   cipassword      = "ubuntu"
+#   sshkeys         = file("~/.ssh/id_ed25519.pub")
+#   ssh_private_key = file("~/.ssh/id_ed25519")
+
+#   nameserver = "8.8.8.8 8.8.4.4"
+
+#   ipconfig0 = format(
+#     "ip=%s/24,gw=%s",
+#     cidrhost(var.lan_cidr, 10),
+#     cidrhost(var.lan_cidr, 1)
+#   )
 
 #   network {
 #     id     = 0
-#     model  = "virtio"
-#     bridge = var.wan_bridge
-#   }
-
-#   network {
-#     id     = 1
-#     model  = "virtio"
 #     bridge = var.lan_bridge
+#     model  = "virtio"
 #   }
 
-#   sshkeys = file("~/.ssh/id_ed25519.pub")
+#   scsihw = "virtio-scsi-pci"
+
+#   serial {
+#     id   = 0
+#     type = "socket"
+#   }
+
+#   disk {
+#     backup  = true
+#     format  = "raw"
+#     type    = "cloudinit"
+#     storage = "os"
+#     slot    = "ide2"
+#   }
+
+#   disk {
+#     backup  = true
+#     format  = "raw"
+#     type    = "disk"
+#     storage = "os"
+#     slot    = "scsi0"
+#     discard = true
+#     size    = "32G"
+#   }
 # }
