@@ -44,7 +44,7 @@ locals {
   }
 
   masters = {
-    count = 1
+    count = 2
 
     name_prefix = "k8s-master"
     vmid_prefix = 300

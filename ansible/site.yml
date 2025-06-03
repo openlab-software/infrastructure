@@ -1,7 +1,18 @@
+- name: Setup Proxy
+  hosts: proxy
+  become: true
+  roles:
+    - docker
+    - proxy
+  vars:
+    nginx_conf_path: /opt/nginx-k8s-proxy/nginx.conf
+    nginx_container_name: nginx-k8s-proxy
+
 - name: Install k8s
   hosts: k8s
   become: true
   roles:
+    - docker  
     - k8s
 
 - name: Setup k8s master node
@@ -9,6 +20,12 @@
   become: true
   roles:
     - k8s-master
+
+- name: Setup k8s control-plane node
+  hosts: k8s-control-plane
+  become: true
+  roles:
+    - k8s-control-plane
 
 - name: Setup k8s worker node
   hosts: k8s-worker

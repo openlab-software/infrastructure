@@ -42,3 +42,5 @@
     daemon_reload: yes
     state: restarted
 
+- name: Destroy cluster before starting again
+  command: kubeadm reset -f

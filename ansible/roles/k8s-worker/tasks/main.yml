@@ -1,13 +1,10 @@
 ---
-# - name: Copy join to nodes
-#   command: "{{ hostvars[groups[]]  }}"
+- name: Enable TCP port 6443 (On Master) is able to connect from Worker
+  wait_for: "host=10.0.0.20 port=6443 timeout=1"
 
-
-# - name: Copy join to nodes
-#   copy:
-#     dest: /opt/kubejoin.sh
-#     src: ./join/kubejoin.sh
-#     mode: "0700"
-
-# - name: Run command on remote
-#   shell: /opt/kubejoin.sh
+- name: Join worker to cluster
+  shell: >
+    {{ hostvars['master1'].join_command }}
+    {% if inventory_hostname in groups['k8s-master'] and inventory_hostname != 'master1' %}
+    --control-plane
+    {% endif %}

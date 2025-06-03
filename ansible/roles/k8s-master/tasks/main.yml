@@ -1,44 +1,34 @@
-- name: Destroy cluster before starting again
-  command: kubeadm reset -f
-
 - name: Initialize k8s cluster
-  command: kubeadm init
+  command: kubeadm init --control-plane-endpoint "10.0.0.10:6443" --upload-certs --pod-network-cidr=10.244.0.0/16 --service-cidr=10.245.0.0/16
 
-- name: Install pod network
-  command: kubectl apply -f https://docs.projectcalico.org/v3.14/manifests/calico.yaml
-  environment:
-    KUBECONFIG: /etc/kubernetes/admin.conf
+- name: Upload certs e obter certificate-key
+  shell: kubeadm init phase upload-certs --upload-certs | tail -n1
+  register: certificate_key
+  run_once: true
 
 - name: Get join command
   shell: kubeadm token create --print-join-command
   register: kubeadm_join_command
 
-  
-# - name: Initialize k8s cluster
-#   command: kubeadm init
-#   register: kubeadm_init_output
+- name: Set Join Command
+  set_fact:
+    join_command: "{{ kubeadm_join_command.stdout }} --certificate-key {{ certificate_key.stdout }}"
 
-# - name: Create file with output
-#   copy:
-#     content: "{{ kubeadm_init_output.stdout }}"
-#     dest: /root/kubeadminit
+- name: Create .kube directory
+  become_user: ubuntu
+  file:
+    path: $HOME/.kube
+    state: directory
+    mode: 0755
 
-# - name: Prepare kubejoin script
-#   shell: tail -2 /root/kubeadminit > /root/kubejoin.sh
+- name: Copy admin.conf to User's kube config
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/ubuntu/.kube/config
+    remote_src: yes
+    owner: ubuntu
 
-# - name: Get kubejoin
-#   fetch:
-#     dest: ./join
-#     src: /root/kubejoin.sh
-
-# - name: Organize files
-#   shell: |
-#     cp join/{{ inventory_hostname }}/root/kubejoin.sh join/  
-#     rm -fr join/{{ inventory_hostname }}
-#   delegate_to: localhost
-#   become: no
-
-# - name: Install pod network
-#   command: kubectl apply -f https://docs.projectcalico.org/v3.14/manifests/calico.yaml
-#   environment:
-#     KUBECONFIG: /etc/kubernetes/admin.conf
+- name: Install pod network
+  command: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf

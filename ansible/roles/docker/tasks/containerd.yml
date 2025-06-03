@@ -1,0 +1,67 @@
+---
+- name: Install Docker and containerd prerequisites
+  apt:
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      - virtualenv
+    state: latest
+    update_cache: true
+
+- name: Add GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker's APT repo
+  apt_repository:
+      repo: deb https://download.docker.com/linux/ubuntu focal stable
+      state: present
+
+- name: Install Docker
+  become: true
+  apt:
+    pkg:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: latest
+    update_cache: true
+
+- name: Criar arquivo de configuração do containerd
+  command: containerd config default
+  register: containerd_config
+
+- name: Salvar configuração do containerd
+  copy:
+    dest: /etc/containerd/config.toml
+    content: "{{ containerd_config.stdout }}"
+    mode: '0644'
+
+- name: Ajustar SystemdCgroup = true no containerd
+  replace:
+    path: /etc/containerd/config.toml
+    regexp: 'SystemdCgroup = false'
+    replace: 'SystemdCgroup = true'
+
+- name: Ativar containerd
+  systemd:
+    name: containerd
+    enabled: true
+    state: restarted
+
+- name: Garantir que o grupo docker existe
+  group:
+    name: docker
+    state: present
+
+- name: Adicionar usuario ao grupo docker
+  user:
+    name: "{{ ansible_user | default('ubuntu') }}"
+    groups: docker
+    append: yes
+
+- name: Recarregar o systemd (daemon-reexec)
+  command: systemctl daemon-reexec

@@ -1,0 +1,22 @@
+---
+- name: Create config directory
+  file:
+    path: /opt/nginx-k8s-proxy
+    state: directory
+
+- name: Copy Nginx config
+  copy:
+    src: files/nginx.conf
+    dest: "{{ nginx_conf_path }}"
+    mode: '0644'
+
+- name: Run Nginx container
+  docker_container:
+    name: "{{ nginx_container_name }}"
+    image: nginx:latest
+    state: started
+    restart_policy: always
+    ports:
+      - "6443:6443"
+    volumes:
+      - "{{ nginx_conf_path }}:/etc/nginx/nginx.conf:ro"
