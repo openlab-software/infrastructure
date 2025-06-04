@@ -1,6 +1,6 @@
 ---
 - name: Enable TCP port 6443 (On Master) is able to connect from Worker
-  wait_for: "host=10.0.0.20 port=6443 timeout=1"
+  wait_for: "host=k8s.lan port=6443 timeout=1"
 
 - name: Join worker to cluster
   shell: "{{ hostvars['master1'].join_command }} --control-plane"

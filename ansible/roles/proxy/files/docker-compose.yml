@@ -1,0 +1,37 @@
+# More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
+networks:
+  homelab:
+    driver: bridge
+services:
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - "6443:6443"
+      - "80:80/tcp"
+      - "443:443/tcp"
+    volumes:
+      - "/opt/proxy/etc-nginx/nginx.conf:/etc/nginx/nginx.conf:ro"
+    depends_on:
+      - pihole
+    networks:
+      - homelab
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    environment:
+      TZ: 'America/Sao_Paulo'
+      FTLCONF_webserver_api_password: 'admin'
+      FTLCONF_dns_listeningMode: 'all'
+    volumes:
+      - './etc-pihole:/etc/pihole'
+    cap_add:
+      - NET_ADMIN
+      - SYS_TIME
+      - SYS_NICE
+    restart: unless-stopped
+    networks:
+      - homelab

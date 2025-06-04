@@ -20,9 +20,8 @@ resource "proxmox_vm_qemu" "k8s-masters" {
   ciuser     = local.cloud_init.user
   cipassword = local.cloud_init.password
 
-  nameserver = "8.8.8.8 8.8.4.4"
-  ssh_user   = "ubuntu"
-  os_type    = "cloud-init"
+  ssh_user = "ubuntu"
+  os_type  = "cloud-init"
 
   ssh_private_key = local.cloud_init.ssh_private_key
   sshkeys         = local.cloud_init.ssh_public_key

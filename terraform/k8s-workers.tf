@@ -20,8 +20,6 @@ resource "proxmox_vm_qemu" "k8s-workers" {
   ciuser     = local.cloud_init.user
   cipassword = local.cloud_init.password
 
-  nameserver = "8.8.8.8 8.8.4.4"
-
   sshkeys         = local.cloud_init.ssh_public_key
   ssh_private_key = local.cloud_init.ssh_private_key
 
