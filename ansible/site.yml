@@ -30,7 +30,7 @@
   roles:
     - k8s-worker
 
-# - name: Setup NFS server
-#   hosts: tag_type_worker
-#   roles:
-#     - nfsserver
+- name: Setup NFS server
+  hosts: nfsserver
+  roles:
+    - nfsserver

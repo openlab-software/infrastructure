@@ -1,17 +1,15 @@
-resource "proxmox_vm_qemu" "DNS" {
+resource "proxmox_vm_qemu" "nfs-server" {
   target_node = "pve"
   vmid        = 201
-  name        = "dns-server"
+  name        = "nfs-server"
 
   onboot = true
   clone  = var.cloudinit_template
   agent  = 1
 
-  cores      = 2
-  memory     = 4608
-  sockets    = 2
-  nameserver = "8.8.8.8 8.8.4.4"
-
+  cores   = 2
+  memory  = 4608
+  sockets = 2
 
   ciuser          = "ubuntu"
   cipassword      = "ubuntu"
@@ -20,7 +18,7 @@ resource "proxmox_vm_qemu" "DNS" {
 
   ipconfig0 = format(
     "ip=%s/24,gw=%s",
-    cidrhost(var.lan_cidr, 2),
+    cidrhost(var.lan_cidr, 11),
     cidrhost(var.lan_cidr, 1)
   )
 
@@ -52,6 +50,6 @@ resource "proxmox_vm_qemu" "DNS" {
     storage = "os"
     slot    = "scsi0"
     discard = true
-    size    = "32G"
+    size    = "300G"
   }
 }
