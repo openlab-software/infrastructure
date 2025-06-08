@@ -5,12 +5,13 @@ metadata:
 data:
   index.html: |
     <!DOCTYPE html>
-    <html>
+    <html lang="pt-BR">
     <head>
-      <title>Ola</title>
+        <meta charset="UTF-8" />
+        <title>Olá</title>
     </head>
     <body>
-      <h1>Hello World!</h1>
+        <h1>Wellcome to Patrick's homelab</h1>
     </body>
     </html>
 ---
@@ -73,6 +74,16 @@ spec:
                 port:
                   number: 80
     - host: patrick.dev.br
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pagina-hello-svc
+                port:
+                  number: 80
+    - host: www.patrick.dev.br
       http:
         paths:
           - path: /

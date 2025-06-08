@@ -1,0 +1,12 @@
+auth:
+  rootPassword: kp7aD!&pu2nELC
+  username: user
+  password: $VlrQU%wM$mdB9
+  database: mongo
+
+persistence:
+  enabled: true
+  size: 8Gi
+
+replicaSet:
+  enabled: true
