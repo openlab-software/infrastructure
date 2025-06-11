@@ -1,0 +1,17 @@
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 10Gi
+
+auth:
+  enabled: true
+  htpasswd: |
+    user:$2y$05$xSSkxlaTFK3fR1rkbmw1M.IALwHuTEY/Y738ubXaGXxWjtuImWyN2
+
+tls:
+  enabled: false
+
+logLevel: info
+
+proxy:
+  enabled: false
