@@ -972,9 +972,9 @@ agent:
   # -- Agent privileged container
   privileged: true
   # -- Configure container user
-  runAsUser:
+  runAsUser: 0
   # -- Configure container group
-  runAsGroup:
+  runAsGroup: 0
   # -- Enables the agent to use the host network
   hostNetworking: false
   # -- Resources allocation (Requests and Limits)
@@ -1017,7 +1017,13 @@ agent:
   # Configure the attributes as they appear in the corresponding Java class for that type
   # https://github.com/jenkinsci/kubernetes-plugin/tree/master/src/main/java/org/csanchez/jenkins/plugins/kubernetes/volumes
   # -- Additional volumes
-  volumes: []
+  volumes:
+  # - type: Secret
+  #   name: docker-config
+  #   secretName: regcred
+  #   items:
+  #   - key: .dockerconfigjson
+  #     path: config.json
   # - type: ConfigMap
   #   configMapName: myconfigmap
   #   mountPath: /var/myapp/myconfigmap
@@ -1110,7 +1116,7 @@ agent:
   # -- Max number of agents to launch for this type of agent
   instanceCap: 2147483647
   # -- Agent Pod base name
-  podName: "default"
+  podName: "agent"
 
   # Enables garbage collection of orphan pods for this Kubernetes cloud. (beta)
   garbageCollection:
@@ -1153,20 +1159,13 @@ agent:
   # Containers specified here are added to all agents. Set key empty to remove container from additional agents.
   # -- Add additional containers to the agents
   additionalContainers:
-   - sideContainerName: dind
-     image:
-       repository: docker
-       tag: dind
-     command: dockerd-entrypoint.sh
-     args: ""
-     privileged: true
-     resources:
-       requests:
-         cpu: 500m
-         memory: 1Gi
-       limits:
-         cpu: 1
-         memory: 2Gi
+  #  - sideContainerName: dind
+  #    image:
+  #      repository: docker
+  #      tag: dind
+  #    command: dockerd-entrypoint.sh
+  #    args: ""
+  #    privileged: true
 
   # Useful when configuring agents only with the podTemplates value, since the default podTemplate populated by values mentioned above will be excluded in the rendered template.
   # -- Disable the default Jenkins Agent configuration
