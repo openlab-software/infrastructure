@@ -1,6 +1,0 @@
----
-- name: Do prerequisites
-  include_tasks: kube_prereqs.yml
-
-- name: Install Kubernetes tools
-  include_tasks: install_k8s.yml

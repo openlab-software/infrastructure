@@ -1,3 +1,0 @@
----
-- name: Install Containerd and Docker
-  include_tasks: containerd.yml
