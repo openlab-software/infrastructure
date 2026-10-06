@@ -1,0 +1,49 @@
+---
+# Prepara a máquina de controle (Ubuntu/Debian/WSL) para rodar argocd.yml / argocd-local.yml.
+# Usa só módulos nativos: as coleções ainda não existem quando este playbook é lido.
+# Requer o ansible já instalado (sudo apt install -y ansible). Idempotente.
+#
+# Uso:
+#   ansible-playbook -i localhost, bootstrap.yml --ask-become-pass
+- name: Preparar a máquina de controle
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Instalar pacotes do sistema
+      become: true
+      apt:
+        name:
+          - python3-pip
+          - python3-kubernetes
+          - curl
+        state: present
+        update_cache: true
+
+    # Instalação no Python do sistema para o lookup do Bitwarden enxergar o módulo.
+    # PIP_BREAK_SYSTEM_PACKAGES: o Ubuntu recente bloqueia pip no Python do sistema (PEP 668);
+    # pips antigos ignoram a variável.
+    - name: Instalar módulos Python (bitwarden-sdk)
+      become: true
+      pip:
+        name: bitwarden-sdk
+      environment:
+        PIP_BREAK_SYSTEM_PACKAGES: "1"
+
+    - name: Instalar coleções do Ansible
+      command: ansible-galaxy collection install -r requirements.yml
+      args:
+        chdir: "{{ playbook_dir }}"
+      register: galaxy
+      changed_when: "'Installing' in galaxy.stdout"
+
+    - name: Verificar se o Helm já está instalado
+      stat:
+        path: /usr/local/bin/helm
+      register: helm_bin
+
+    # Só necessário para o argocd-local.yml
+    - name: Instalar o Helm
+      become: true
+      shell: curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      when: not helm_bin.stat.exists

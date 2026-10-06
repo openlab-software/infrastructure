@@ -1,0 +1,20 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: bitwarden-selfsigned
+  namespace: {{ external_secrets_namespace }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: bitwarden-tls-certs
+  namespace: {{ external_secrets_namespace }}
+spec:
+  secretName: bitwarden-tls-certs
+  dnsNames:
+    - bitwarden-sdk-server.{{ external_secrets_namespace }}.svc.cluster.local
+  issuerRef:
+    name: bitwarden-selfsigned
+    kind: Issuer

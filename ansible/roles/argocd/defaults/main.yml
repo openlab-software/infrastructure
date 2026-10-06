@@ -1,0 +1,23 @@
+---
+# Nada aqui é secreto: pode ir para o Git. Os segredos (GitHub PAT e access token
+# do Bitwarden) vêm do Bitwarden / BWS_ACCESS_TOKEN, ver tasks/bitwarden.yml.
+argocd_namespace: argocd
+# true = apaga o namespace do ArgoCD antes de instalar (reset do zero)
+argocd_cleanup: false
+# false = não instala python3-kubernetes/helm via apt (usado no argocd-local.yml)
+argocd_install_prereqs: true
+
+# GitHub
+github_org: openlab-software
+github_user: patrickdevbr            # dono do PAT (usado no GHCR e no git write-back)
+github_topic_filter: argocd
+
+# Bitwarden Secrets Manager
+bitwarden_organization_id: "84371f8d-e8b3-4ce1-b115-b4db01129757"
+bitwarden_project_id: "790fe7ba-b341-4753-8091-b4db0112aec1"
+# UUID do secret que guarda o GitHub PAT (classic: repo + read:packages).
+# Fica num projeto separado do `erp`; a busca é por UUID, então só importa que a
+# machine account tenha acesso de leitura a esse projeto também.
+bitwarden_github_pat_secret_id: 417180c5-43da-4639-9268-b4db012ec063
+
+external_secrets_namespace: external-secrets

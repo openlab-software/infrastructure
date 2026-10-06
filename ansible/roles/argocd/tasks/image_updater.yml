@@ -1,0 +1,46 @@
+---
+# Credencial do registry (user:token) e do git write-back (username/password)
+- name: Criar secret ghcr-creds
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: ghcr-creds
+        namespace: "{{ argocd_namespace }}"
+      stringData:
+        creds: "{{ github_user }}:{{ github_token }}"
+  no_log: true
+
+- name: Criar secret git-creds
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: git-creds
+        namespace: "{{ argocd_namespace }}"
+      stringData:
+        username: "{{ github_user }}"
+        password: "{{ github_token }}"
+  no_log: true
+
+# Chart 0.x = configuração por annotations (a 1.x migrou para o CRD ImageUpdater)
+- name: Instalar/Atualizar ArgoCD Image Updater
+  kubernetes.core.helm:
+    name: argocd-image-updater
+    chart_ref: argo/argocd-image-updater
+    chart_version: "<1.0.0"
+    release_namespace: "{{ argocd_namespace }}"
+    wait: true
+    wait_timeout: 5m
+    values:
+      config:
+        applicationsAPIKind: kubernetes
+        registries:
+          - name: GitHub Container Registry
+            prefix: ghcr.io
+            api_url: https://ghcr.io
+            credentials: "secret:{{ argocd_namespace }}/ghcr-creds#creds"

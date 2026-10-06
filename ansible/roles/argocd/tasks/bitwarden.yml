@@ -1,0 +1,18 @@
+---
+# O lookup roda na máquina de controle e usa o bws CLI com o token informado no prompt.
+- name: Validar o access token do Bitwarden e o id do secret do GitHub PAT
+  assert:
+    that:
+      - bitwarden_access_token | length > 0
+      - bitwarden_github_pat_secret_id | length > 0
+    fail_msg: >-
+      Informe o access token do Bitwarden (prompt, BWS_ACCESS_TOKEN ou -e) e preencha
+      bitwarden_github_pat_secret_id em roles/argocd/defaults/main.yml.
+    quiet: true
+  no_log: true
+
+# O mesmo token da machine account também é entregue ao cluster (secret do ESO)
+- name: Buscar o GitHub PAT no Bitwarden
+  set_fact:
+    github_token: "{{ lookup('bitwarden.secrets.lookup', bitwarden_github_pat_secret_id, access_token=bitwarden_access_token) }}"
+  no_log: true
