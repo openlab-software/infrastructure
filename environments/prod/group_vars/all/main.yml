@@ -1,0 +1,26 @@
+---
+env_name: prod
+cluster_type: kubeadm
+kubeconfig: "{{ playbook_dir }}/../../environments/{{ env_name }}/kubeconfig"
+
+base_domain: patrick.dev.br
+
+# --- kubeadm ---
+k8s_version: "1.33"
+k8s_user: ubuntu
+# Endpoint do control-plane: resolvido pelo pihole do proxy e balanceado pelo nginx (porta 6443)
+k8s_api_endpoint: k8s.lan
+k8s_pod_cidr: 10.244.0.0/16
+k8s_service_cidr: 10.245.0.0/16
+
+# --- NFS ---
+nfs_server: nfsserver.lan
+nfs_share: /srv/nfs/k8s
+nfs_export_cidr: 10.0.0.0/24
+
+# --- componentes ---
+metallb_addresses:
+  - 10.0.0.40-10.0.0.49
+ingress_nginx_mode: loadbalancer
+storage_provider: nfs-csi
+argocd_ingress_enabled: false

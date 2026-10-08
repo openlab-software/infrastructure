@@ -37,3 +37,6 @@ override.tf.json
 terraform.rc
 
 *.key
+# kubeconfigs gerados pelos ambientes
+environments/*/kubeconfig
+environments/*/kind-config.yaml

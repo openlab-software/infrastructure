@@ -1,0 +1,30 @@
+---
+env_name: kind
+cluster_type: kind
+kubeconfig: "{{ playbook_dir }}/../../environments/{{ env_name }}/kubeconfig"
+
+# Acesso local: http://argocd.localtest.me, http://registry.localtest.me ... (localtest.me -> 127.0.0.1)
+base_domain: localtest.me
+
+# Mesmos CIDRs do prod
+k8s_pod_cidr: 10.244.0.0/16
+k8s_service_cidr: 10.245.0.0/16
+
+# --- kind (1 control-plane + 2 workers) ---
+kind_cluster_name: openlab
+kind_workers: 2
+kind_node_image: kindest/node:v1.33.1
+# Portas do host mapeadas para o ingress (mude se 80/443 estiverem ocupadas)
+kind_http_port: 80
+kind_https_port: 443
+
+# --- componentes ---
+ingress_nginx_mode: hostport
+storage_provider: builtin
+argocd_ingress_enabled: true
+metallb_addresses: []        # vazio = calculado da rede docker "kind"
+
+# Senhas de desenvolvimento (só valem no kind)
+harbor_admin_password: admin
+mongodb_root_password: dev-root
+mongodb_password: dev-user

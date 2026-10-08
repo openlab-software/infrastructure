@@ -1,0 +1,16 @@
+---
+# Componentes ligados neste ambiente. Edite ou rode: make select ENV=kind
+# Dependências (ver ansible/components/catalog.yml) são adicionadas automaticamente.
+components:
+  cni: false
+  metallb: false
+  ingress_nginx: true
+  storage: false
+  cert_manager: true
+  external_secrets: true
+  argocd: true
+  argocd_image_updater: true
+  argocd_appset: true
+  harbor: false
+  mongodb: false
+  jenkins: false
