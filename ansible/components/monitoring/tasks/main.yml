@@ -60,6 +60,16 @@
       {{ lookup('template', 'values.yml.j2') | from_yaml
          | combine(monitoring_extra_values, recursive=True) }}
 
+# O sidecar do Grafana carrega ConfigMaps com o label grafana_dashboard (qualquer namespace).
+# Aplicado com src (sem Jinja): o JSON usa {{service}} nas legendas e o Ansible converteria
+# o JSON lido de um arquivo em objeto se ele passasse por uma expressão.
+- name: Dashboard "Requisições (Tempo)"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ monitoring_namespace }}"
+    src: "{{ role_path }}/files/dashboards/requests-tempo-configmap.yaml"
+  when: "'tempo' in (selected_components | default([]))"
+
 - name: Mostrar como acessar o Grafana
   debug:
     msg:

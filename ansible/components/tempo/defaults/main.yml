@@ -4,3 +4,6 @@ tempo_chart_version: ""
 tempo_storage_size: 10Gi
 tempo_retention: 72h
 tempo_extra_values: {}
+# Destino das métricas geradas a partir dos traces (kube-prometheus-stack)
+monitoring_namespace: monitoring
+monitoring_release: monitoring

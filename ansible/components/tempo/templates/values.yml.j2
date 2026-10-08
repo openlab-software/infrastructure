@@ -2,6 +2,30 @@
 tempo:
   retention: {{ tempo_retention }}
   # receivers: o padrão do chart já escuta OTLP gRPC 4317 / HTTP 4318 (e Jaeger)
+{% if 'monitoring' in (selected_components | default([])) %}
+  # Metrics-generator: transforma os traces em métricas RED (traces_spanmetrics_*) e service graph,
+  # enviadas ao Prometheus por remote write. Alimenta o dashboard "Requisições (Tempo)".
+  metricsGenerator:
+    enabled: true
+    remoteWriteUrl: http://{{ monitoring_release }}-kube-prometheus-prometheus.{{ monitoring_namespace }}.svc.cluster.local:9090/api/v1/write
+    storage:
+      path: /var/tempo/generator
+    processor:
+      service_graphs: {}
+      span_metrics:
+        dimensions:
+          - http.method
+          - http.request.method
+          - http.route
+          - http.status_code
+          - http.response.status_code
+  overrides:
+    defaults:
+      metrics_generator:
+        processors:
+          - service-graphs
+          - span-metrics
+{% endif %}
 persistence:
   enabled: true
   size: {{ tempo_storage_size }}
