@@ -1,0 +1,12 @@
+# Gerado pelo Terraform (terraform/inventory.tf). Rode `make infra ENV=prod` para atualizar.
+%{ for group, hosts in groups ~}
+[${group}]
+%{ for h in hosts ~}
+${h.alias} ansible_host=${h.ip} ansible_user=${user} ansible_ssh_private_key_file=${key}
+%{ endfor ~}
+
+%{ endfor ~}
+[k8s:children]
+k8s_init
+k8s_control_plane
+k8s_workers

@@ -1,0 +1,6 @@
+# cp terraform.tfvars.example terraform.tfvars  (o *.tfvars real está no .gitignore)
+pm_api_token_id     = "terraform@pve!provider"
+pm_api_token_secret = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+lan_bridge          = "vmbr1"
+# lan_cidr           = "10.0.0.0/24"
+# cloudinit_template = "ubuntu-2404-cloud-init"
