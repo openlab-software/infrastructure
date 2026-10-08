@@ -1,0 +1,62 @@
+# Agente em todos os nós: lê os logs dos containers (stdout) e envia ao Loki via OTLP.
+# Só é criado quando o componente loki está selecionado.
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-agent
+  namespace: {{ observability_namespace }}
+spec:
+  mode: daemonset
+  resources:
+    requests: { cpu: 50m, memory: 96Mi }
+    limits: { memory: 256Mi }
+  # Precisa ler /var/log/pods (arquivos do root no nó)
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+  tolerations:
+    - operator: Exists
+  volumes:
+    - name: varlogpods
+      hostPath:
+        path: /var/log/pods
+  volumeMounts:
+    - name: varlogpods
+      mountPath: /var/log/pods
+      readOnly: true
+  config:
+    receivers:
+      filelog:
+        include:
+          - /var/log/pods/*/*/*.log
+        # não ler os próprios logs (evita laço)
+        exclude:
+          - /var/log/pods/{{ observability_namespace }}_otel-agent*/*/*.log
+        start_at: end
+        include_file_path: true
+        include_file_name: false
+        operators:
+          # Interpreta o formato CRI/containerd e extrai namespace, pod, container e uid do caminho
+          - type: container
+            id: container-parser
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 20
+      # O Loki indexa service.name; usa o nome do container quando não houver outro
+      resource/service-name:
+        attributes:
+          - key: service.name
+            from_attribute: k8s.container.name
+            action: insert
+      batch: {}
+    exporters:
+      otlphttp/loki:
+        endpoint: http://loki.{{ observability_namespace }}.svc.cluster.local:3100/otlp
+    service:
+      pipelines:
+        logs:
+          receivers: [filelog]
+          processors: [memory_limiter, resource/service-name, batch]
+          exporters: [otlphttp/loki]

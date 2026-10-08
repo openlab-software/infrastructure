@@ -16,6 +16,15 @@ catalog:
     description: StorageClass padrão (NFS CSI no prod; no kind usa a do próprio kind)
   - name: cert_manager
     description: cert-manager
+  - name: monitoring
+    description: Prometheus + Grafana + Alertmanager (kube-prometheus-stack)
+  - name: loki
+    description: Loki (logs)
+  - name: tempo
+    description: Tempo (traces)
+  - name: opentelemetry
+    description: OpenTelemetry Operator + Collector (gateway OTLP para traces/métricas/logs e agente de logs)
+    requires: [cert_manager]
   - name: external_secrets
     description: External Secrets Operator ligado ao Bitwarden Secrets Manager
     requires: [cert_manager]

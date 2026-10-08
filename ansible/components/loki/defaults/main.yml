@@ -1,0 +1,6 @@
+---
+observability_namespace: observability
+loki_chart_version: ""
+loki_storage_size: 10Gi
+loki_retention: 168h
+loki_extra_values: {}

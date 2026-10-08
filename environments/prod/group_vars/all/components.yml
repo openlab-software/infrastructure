@@ -7,6 +7,10 @@ components:
   ingress_nginx: true
   storage: true
   cert_manager: true
+  monitoring: true
+  loki: true
+  tempo: true
+  opentelemetry: true
   external_secrets: true
   argocd: true
   argocd_image_updater: true

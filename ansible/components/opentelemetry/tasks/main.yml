@@ -1,0 +1,60 @@
+---
+- name: Adicionar repositório Helm do OpenTelemetry
+  kubernetes.core.helm_repository:
+    name: open-telemetry
+    repo_url: https://open-telemetry.github.io/opentelemetry-helm-charts
+
+# O webhook de admissão do operator usa certificado do cert-manager (dependência do catálogo).
+- name: Instalar/Atualizar o OpenTelemetry Operator
+  kubernetes.core.helm:
+    name: opentelemetry-operator
+    chart_ref: open-telemetry/opentelemetry-operator
+    chart_version: "{{ opentelemetry_chart_version | default(omit, true) }}"
+    release_namespace: "{{ opentelemetry_namespace }}"
+    create_namespace: true
+    update_repo_cache: true
+    wait: true
+    wait_timeout: 10m
+    values: >-
+      {{ {'manager': {'collectorImage': {'repository': otel_collector_image}}}
+         | combine(opentelemetry_extra_values, recursive=True) }}
+
+- name: Criar namespace {{ observability_namespace }}
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ observability_namespace }}"
+
+- name: Permissões do coletor gateway (k8sattributes)
+  kubernetes.core.k8s:
+    state: present
+    template: rbac.yml.j2
+
+# O webhook do operator pode demorar alguns segundos para aceitar os CRs depois do Helm
+- name: Criar o coletor gateway (OTLP -> Tempo / Loki / Prometheus)
+  kubernetes.core.k8s:
+    state: present
+    template: gateway.yml.j2
+  register: otel_gateway
+  retries: 12
+  delay: 10
+  until: otel_gateway is succeeded
+
+- name: Criar o agente de logs (DaemonSet -> Loki)
+  kubernetes.core.k8s:
+    state: present
+    template: agent.yml.j2
+  register: otel_agent
+  retries: 12
+  delay: 10
+  until: otel_agent is succeeded
+  when: "'loki' in (selected_components | default([]))"
+
+- name: Endpoint OTLP para as aplicações
+  debug:
+    msg:
+      - "OTLP gRPC: http://otel-gateway-collector.{{ observability_namespace }}.svc.cluster.local:4317"
+      - "OTLP HTTP: http://otel-gateway-collector.{{ observability_namespace }}.svc.cluster.local:4318"

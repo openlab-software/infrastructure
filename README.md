@@ -66,6 +66,10 @@ scripts/select_components.py   menu do `make select`
 | `ingress_nginx` | ingress-nginx | |
 | `storage` | NFS CSI + StorageClass `nfs-csi` (prod) ou nada (kind) | |
 | `cert_manager` | cert-manager | |
+| `monitoring` | kube-prometheus-stack: Prometheus, Alertmanager e Grafana | |
+| `loki` | Loki (logs, modo monolítico) | |
+| `tempo` | Tempo (traces, modo single binary) | |
+| `opentelemetry` | OpenTelemetry Operator + coletor gateway (OTLP) + agente de logs | `cert_manager` |
 | `external_secrets` | External Secrets Operator + ClusterSecretStore do Bitwarden | `cert_manager` |
 | `argocd` | ArgoCD | |
 | `argocd_image_updater` | ArgoCD Image Updater | `argocd` |
@@ -85,6 +89,30 @@ Dependências são adicionadas sozinhas: `ONLY=argocd_appset` também instala `a
 Um componente só precisa de um kubeconfig (já exportado pelo playbook via `KUBECONFIG`);
 use `kubernetes.core.helm` / `kubernetes.core.k8s`. Variáveis por ambiente ficam em
 `group_vars/all/main.yml`.
+
+## Observabilidade (Grafana, Prometheus, Loki, Tempo, OpenTelemetry)
+
+Ligue `monitoring`, `loki`, `tempo` e `opentelemetry` (já estão ligados nos dois ambientes).
+
+```
+ apps ──OTLP──▶ otel-gateway-collector ──▶ Tempo (traces)
+  │                  │                  └─▶ Prometheus (métricas OTLP, remote write)
+  │                  └────────────────────▶ Loki (logs OTLP)
+  ├─ /q/metrics ◀── Prometheus (ServiceMonitor)
+  └─ stdout ◀── otel-agent (DaemonSet, filelog) ──▶ Loki
+                         Grafana lê Prometheus, Loki e Tempo (datasources já provisionados)
+```
+
+- **Grafana:** `http://grafana.<base_domain>` (kind: `grafana.localtest.me`). Usuário `admin`; a senha é gerada
+  uma vez e fica no Secret `grafana-admin` (ou defina `grafana_admin_password`). O `make addons` imprime a senha.
+- **Endpoint OTLP para as aplicações:** `http://otel-gateway-collector.observability.svc.cluster.local:4317` (gRPC) ou `:4318` (HTTP).
+- **Métricas das aplicações:** crie um `ServiceMonitor` ou `PodMonitor` em qualquer namespace; o Prometheus descobre todos.
+- **Datasources:** Loki e Tempo só são criados no Grafana se esses componentes estiverem selecionados. Sem eles,
+  o gateway manda o sinal para o exporter `debug` (aparece no log do coletor).
+- **Logs → traces:** os logs das aplicações devem conter `traceId=<id>`; o Grafana liga o log ao trace (derived field).
+- **Storage:** Prometheus, Loki e Tempo usam PVCs na StorageClass padrão. No prod isso é o NFS (`nfs-csi`), que não é
+  recomendado para o Prometheus (locking); prefira outra StorageClass via `monitoring_extra_values`.
+- **Kind:** a stack completa pede alguns GB de RAM. Para um kind leve, desligue `loki`/`tempo` em `make select ENV=kind`.
 
 ## Segredos
 

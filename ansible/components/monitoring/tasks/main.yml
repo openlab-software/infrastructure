@@ -1,0 +1,68 @@
+---
+- name: Adicionar repositório Helm do prometheus-community
+  kubernetes.core.helm_repository:
+    name: prometheus-community
+    repo_url: https://prometheus-community.github.io/helm-charts
+
+- name: Criar namespace {{ monitoring_namespace }}
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ monitoring_namespace }}"
+
+# Senha do Grafana: vem de grafana_admin_password, do Secret já existente ou é gerada uma vez.
+- name: Ler o Secret grafana-admin
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: grafana-admin
+    namespace: "{{ monitoring_namespace }}"
+  register: grafana_secret
+  no_log: true
+
+- name: Definir a senha do Grafana
+  set_fact:
+    _grafana_password: >-
+      {{ grafana_admin_password
+         if grafana_admin_password | length > 0
+         else (grafana_secret.resources[0].data['admin-password'] | b64decode
+               if grafana_secret.resources | length > 0
+               else lookup('password', '/dev/null length=24 chars=ascii_letters,digits')) }}
+  no_log: true
+
+- name: Criar/atualizar o Secret grafana-admin
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: grafana-admin
+        namespace: "{{ monitoring_namespace }}"
+      stringData:
+        admin-user: admin
+        admin-password: "{{ _grafana_password }}"
+  no_log: true
+
+- name: Instalar/Atualizar kube-prometheus-stack
+  kubernetes.core.helm:
+    name: "{{ monitoring_release }}"
+    chart_ref: prometheus-community/kube-prometheus-stack
+    chart_version: "{{ monitoring_chart_version | default(omit, true) }}"
+    release_namespace: "{{ monitoring_namespace }}"
+    update_repo_cache: true
+    wait: true
+    wait_timeout: 10m
+    values: >-
+      {{ lookup('template', 'values.yml.j2') | from_yaml
+         | combine(monitoring_extra_values, recursive=True) }}
+
+- name: Mostrar como acessar o Grafana
+  debug:
+    msg:
+      - "Grafana: {{ 'http://' ~ grafana_host if grafana_ingress_enabled | bool else 'kubectl -n ' ~ monitoring_namespace ~ ' port-forward svc/' ~ monitoring_release ~ '-grafana 3000:80' }}"
+      - "Usuário: admin"
+      - "Senha: {{ _grafana_password }}"

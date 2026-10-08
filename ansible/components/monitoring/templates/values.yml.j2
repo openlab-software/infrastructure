@@ -1,0 +1,75 @@
+{% set _sel = selected_components | default([]) %}
+prometheus:
+  prometheusSpec:
+    retention: {{ prometheus_retention }}
+    # Coletor OpenTelemetry envia métricas OTLP por remote write
+    enableRemoteWriteReceiver: true
+    # Descobre ServiceMonitors/PodMonitors/regras de qualquer namespace (ex.: o do erp)
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: {{ prometheus_storage_size }}
+{% if not monitoring_scrape_control_plane | bool %}
+kubeEtcd: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeControllerManager: { enabled: false }
+kubeProxy: { enabled: false }
+{% endif %}
+grafana:
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  persistence:
+    enabled: true
+    size: {{ grafana_storage_size }}
+  ingress:
+    enabled: {{ grafana_ingress_enabled | bool | lower }}
+    ingressClassName: nginx
+    hosts:
+      - {{ grafana_host }}
+    path: /
+  grafana.ini:
+    server:
+      root_url: http://{{ grafana_host }}
+{% if 'loki' in _sel or 'tempo' in _sel %}
+  additionalDataSources:
+{% if 'loki' in _sel %}
+    - name: Loki
+      type: loki
+      uid: loki
+      access: proxy
+      url: http://loki.{{ observability_namespace }}.svc.cluster.local:3100
+      jsonData:
+        derivedFields:
+          - name: TraceID
+            matcherRegex: 'traceId=(\w+)'
+            datasourceUid: tempo
+            url: '$${__value.raw}'
+{% endif %}
+{% if 'tempo' in _sel %}
+    - name: Tempo
+      type: tempo
+      uid: tempo
+      access: proxy
+      url: http://tempo.{{ observability_namespace }}.svc.cluster.local:3200
+      jsonData:
+        serviceMap:
+          datasourceUid: prometheus
+{% if 'loki' in _sel %}
+        tracesToLogsV2:
+          datasourceUid: loki
+          spanStartTimeShift: '-5m'
+          spanEndTimeShift: '5m'
+          customQuery: true
+          query: '{k8s_namespace_name=~".+"} |= "$${__trace.traceId}"'
+{% endif %}
+{% endif %}
+{% endif %}

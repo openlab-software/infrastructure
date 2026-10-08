@@ -1,0 +1,11 @@
+# Tempo em modo single binary (chart grafana/tempo), armazenamento local.
+tempo:
+  retention: {{ tempo_retention }}
+  # receivers: o padrão do chart já escuta OTLP gRPC 4317 / HTTP 4318 (e Jaeger)
+persistence:
+  enabled: true
+  size: {{ tempo_storage_size }}
+{% if 'monitoring' in (selected_components | default([])) %}
+serviceMonitor:
+  enabled: true
+{% endif %}

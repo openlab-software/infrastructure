@@ -1,0 +1,6 @@
+---
+observability_namespace: observability
+tempo_chart_version: ""
+tempo_storage_size: 10Gi
+tempo_retention: 72h
+tempo_extra_values: {}

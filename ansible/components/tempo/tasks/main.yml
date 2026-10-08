@@ -1,0 +1,20 @@
+---
+# grafana/tempo está deprecated; o chart mantido está no repositório grafana-community.
+- name: Adicionar repositório Helm da Grafana (community)
+  kubernetes.core.helm_repository:
+    name: grafana-community
+    repo_url: https://grafana-community.github.io/helm-charts
+
+- name: Instalar/Atualizar Tempo
+  kubernetes.core.helm:
+    name: tempo
+    chart_ref: grafana-community/tempo
+    chart_version: "{{ tempo_chart_version | default(omit, true) }}"
+    release_namespace: "{{ observability_namespace }}"
+    create_namespace: true
+    update_repo_cache: true
+    wait: true
+    wait_timeout: 10m
+    values: >-
+      {{ lookup('template', 'values.yml.j2') | from_yaml
+         | combine(tempo_extra_values, recursive=True) }}

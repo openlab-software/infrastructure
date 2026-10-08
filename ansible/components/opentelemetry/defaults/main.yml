@@ -1,0 +1,11 @@
+---
+opentelemetry_namespace: opentelemetry-operator-system
+opentelemetry_chart_version: ""
+# Loki, Tempo e os coletores ficam neste namespace
+observability_namespace: observability
+# Namespace/release do kube-prometheus-stack (destino do remote write de métricas)
+monitoring_namespace: monitoring
+monitoring_release: monitoring
+# Contrib traz os exporters/receivers usados aqui (prometheusremotewrite, filelog, k8sattributes)
+otel_collector_image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib
+opentelemetry_extra_values: {}
