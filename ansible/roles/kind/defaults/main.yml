@@ -1,0 +1,8 @@
+---
+kind_state: present        # present | absent
+kind_cluster_name: openlab
+kind_workers: 2
+kind_node_image: kindest/node:v1.33.1
+kind_http_port: 80
+kind_https_port: 443
+kind_min_inotify_instances: 512

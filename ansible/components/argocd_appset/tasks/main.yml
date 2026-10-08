@@ -1,0 +1,27 @@
+---
+- name: Carregar credenciais do GitHub
+  include_role:
+    name: credentials
+    public: true
+  vars:
+    credentials_require_github: true
+
+- name: Criar secret github-token-secret (usado pelo generator scmProvider)
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: github-token-secret
+        namespace: "{{ argocd_appset_namespace }}"
+      type: Opaque
+      stringData:
+        token: "{{ github_token }}"
+  no_log: true
+
+# O template usa raw/endraw para não conflitar o Go template do ArgoCD com o Jinja
+- name: Criar ApplicationSet de autodiscover da organização
+  kubernetes.core.k8s:
+    state: present
+    template: applicationset.yml.j2

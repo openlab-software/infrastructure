@@ -1,0 +1,4 @@
+---
+argocd_appset_namespace: "{{ argocd_namespace | default('argocd') }}"
+github_org: openlab-software
+github_topic_filter: argocd

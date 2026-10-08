@@ -1,0 +1,12 @@
+---
+# Destrutivo: derruba o nó do cluster. Só é chamado por playbooks/cluster-prod-reset.yml.
+- name: Reset do kubeadm
+  command: kubeadm reset -f
+
+- name: Limpar CNI e kubeconfigs locais
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/cni/net.d
+    - "/home/{{ k8s_user | default('ubuntu') }}/.kube"

@@ -1,0 +1,28 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: {{ kind_cluster_name }}
+networking:
+  # Se o componente "cni" está ligado (flannel), o kind não instala o kindnet
+  disableDefaultCNI: {{ (components.cni | default(false)) | bool | lower }}
+  podSubnet: "{{ k8s_pod_cidr }}"
+  serviceSubnet: "{{ k8s_service_cidr }}"
+nodes:
+  - role: control-plane
+    image: {{ kind_node_image }}
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: {{ kind_http_port }}
+        protocol: TCP
+      - containerPort: 443
+        hostPort: {{ kind_https_port }}
+        protocol: TCP
+{% for i in range(kind_workers | int) %}
+  - role: worker
+    image: {{ kind_node_image }}
+{% endfor %}

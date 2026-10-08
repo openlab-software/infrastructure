@@ -1,0 +1,3 @@
+---
+# Segue o namespace do ArgoCD
+argocd_image_updater_namespace: "{{ argocd_namespace | default('argocd') }}"

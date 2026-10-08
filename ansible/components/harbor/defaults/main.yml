@@ -1,0 +1,7 @@
+---
+harbor_namespace: harbor
+harbor_chart_version: ""
+harbor_host: "registry.{{ base_domain | default('localhost') }}"
+harbor_external_url: "https://{{ harbor_host }}"
+# Troque em produção (ex.: via -e ou lookup('env', ...))
+harbor_admin_password: admin

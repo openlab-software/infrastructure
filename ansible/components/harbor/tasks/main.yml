@@ -1,0 +1,17 @@
+---
+- name: Adicionar repositório Helm do Harbor
+  kubernetes.core.helm_repository:
+    name: harbor
+    repo_url: https://helm.goharbor.io
+
+- name: Instalar/Atualizar Harbor
+  kubernetes.core.helm:
+    name: harbor
+    chart_ref: harbor/harbor
+    chart_version: "{{ harbor_chart_version | default(omit, true) }}"
+    release_namespace: "{{ harbor_namespace }}"
+    create_namespace: true
+    update_repo_cache: true
+    wait: true
+    wait_timeout: 10m
+    values: "{{ lookup('template', 'values.yml.j2') | from_yaml }}"

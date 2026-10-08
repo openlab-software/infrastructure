@@ -1,0 +1,50 @@
+---
+# Sobe o cluster de produção (kubeadm) nas VMs criadas pelo Terraform.
+# Idempotente: pode rodar de novo sem derrubar nada (init/join só em nós ainda fora do cluster).
+# Uso: make cluster ENV=prod
+- name: Aguardar as VMs
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Aguardar SSH (cloud-init pode demorar)
+      wait_for_connection:
+        timeout: 300
+
+- name: Proxy (nginx + pihole)
+  hosts: proxy_servers
+  become: true
+  roles:
+    - docker
+    - proxy
+
+- name: NFS server
+  hosts: nfs
+  become: true
+  roles:
+    - nfs-server
+
+- name: Pré-requisitos do Kubernetes em todos os nós
+  hosts: k8s
+  become: true
+  roles:
+    - docker
+    - k8s
+
+- name: kubeadm init no primeiro control-plane
+  hosts: k8s_init
+  become: true
+  roles:
+    - kubeadm
+
+- name: Entrar os demais control-planes (um de cada vez)
+  hosts: k8s_control_plane
+  become: true
+  serial: 1
+  roles:
+    - kubeadm
+
+- name: Entrar os workers
+  hosts: k8s_workers
+  become: true
+  roles:
+    - kubeadm

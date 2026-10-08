@@ -1,0 +1,49 @@
+---
+- name: Inicializar o cluster (kubeadm init)
+  command: >-
+    kubeadm init
+    --control-plane-endpoint "{{ k8s_api_endpoint }}:6443"
+    --upload-certs
+    --pod-network-cidr={{ k8s_pod_cidr }}
+    --service-cidr={{ k8s_service_cidr }}
+  args:
+    creates: /etc/kubernetes/admin.conf
+
+# Token e certificate-key expiram (24h / 2h): são gerados a cada execução
+- name: Obter a certificate-key para novos control-planes
+  shell: kubeadm init phase upload-certs --upload-certs | tail -n1
+  register: certificate_key
+  changed_when: false
+
+- name: Obter o join command
+  command: kubeadm token create --print-join-command
+  register: kubeadm_join_command
+  changed_when: false
+
+- name: Publicar os join commands
+  set_fact:
+    join_command_worker: "{{ kubeadm_join_command.stdout }}"
+    join_command_control_plane: "{{ kubeadm_join_command.stdout }} --control-plane --certificate-key {{ certificate_key.stdout }}"
+
+- name: Criar diretório .kube do usuário
+  file:
+    path: "/home/{{ k8s_user }}/.kube"
+    state: directory
+    owner: "{{ k8s_user }}"
+    mode: "0755"
+
+- name: Copiar admin.conf para o kubeconfig do usuário
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "/home/{{ k8s_user }}/.kube/config"
+    remote_src: yes
+    owner: "{{ k8s_user }}"
+    mode: "0600"
+
+# O CNI (flannel) é um componente: make addons ENV=prod
+- name: Baixar o kubeconfig do admin para a máquina de controle
+  fetch:
+    src: /etc/kubernetes/admin.conf
+    dest: "{{ kubeconfig }}"
+    flat: true
+  become: true

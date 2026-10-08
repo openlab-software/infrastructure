@@ -1,0 +1,21 @@
+---
+# DESTRUTIVO: executa `kubeadm reset` em todos os nós do cluster de produção.
+# Uso: make reset ENV=prod
+- name: Reset do cluster de produção
+  hosts: k8s
+  become: true
+  vars_prompt:
+    - name: confirm_reset
+      prompt: "Isso DERRUBA o cluster kubeadm em todos os nós. Digite 'sim' para continuar"
+      private: false
+  tasks:
+    - name: Confirmar
+      assert:
+        that: confirm_reset == 'sim'
+        fail_msg: Cancelado.
+        quiet: true
+      run_once: true
+
+    - import_role:
+        name: k8s
+        tasks_from: reset.yml

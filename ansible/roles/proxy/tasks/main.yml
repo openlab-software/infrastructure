@@ -5,8 +5,8 @@
     state: directory
 
 - name: Copy Nginx config
-  copy:
-    src: files/nginx.conf
+  template:
+    src: nginx.conf.j2
     dest: /opt/proxy/etc-nginx/nginx.conf
     mode: '0644'
 
@@ -41,7 +41,7 @@
   replace:
     path: /opt/proxy/etc-pihole/pihole.toml
     regexp: 'hosts\s*=\s*\[\s*(?:.|\n)*?\s*]'
-    replace: 'hosts = ["10.0.0.10 pihole.lan", "10.0.0.1 modem.lan", "10.0.0.10 k8s.lan"]'
+    replace: 'hosts = ["{{ ansible_host }} pihole.lan", "{{ lan_gateway }} modem.lan", "{{ ansible_host }} {{ k8s_api_endpoint }}"]'
 
 - name: Parar o container Docker
   docker_container:

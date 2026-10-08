@@ -1,0 +1,35 @@
+---
+# Catálogo dos componentes instalados no cluster (plugins).
+# - A ordem desta lista é a ordem de instalação.
+# - `requires`: dependências, adicionadas automaticamente mesmo se desligadas.
+# - Cada componente é um role em components/<name>/ (tasks/, defaults/, templates/, files/).
+# Quais ficam ligados é definido por ambiente em
+# environments/<env>/group_vars/all/components.yml (ou `make select ENV=<env>`).
+catalog:
+  - name: cni
+    description: CNI do cluster (flannel). Só para kubeadm; o kind já traz o kindnet
+  - name: metallb
+    description: LoadBalancer para bare-metal (MetalLB)
+  - name: ingress_nginx
+    description: Ingress controller (ingress-nginx)
+  - name: storage
+    description: StorageClass padrão (NFS CSI no prod; no kind usa a do próprio kind)
+  - name: cert_manager
+    description: cert-manager
+  - name: external_secrets
+    description: External Secrets Operator ligado ao Bitwarden Secrets Manager
+    requires: [cert_manager]
+  - name: argocd
+    description: ArgoCD (GitOps)
+  - name: argocd_image_updater
+    description: ArgoCD Image Updater (atualiza imagens do GHCR via git write-back)
+    requires: [argocd]
+  - name: argocd_appset
+    description: ApplicationSet que descobre os repositórios da organização no GitHub
+    requires: [argocd]
+  - name: harbor
+    description: Harbor (container registry)
+  - name: mongodb
+    description: MongoDB (Bitnami, replica set)
+  - name: jenkins
+    description: Jenkins

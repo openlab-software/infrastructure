@@ -1,0 +1,5 @@
+---
+metallb_namespace: metallb-system
+metallb_chart_version: ""
+# Lista de faixas/CIDRs. Vazio no kind = calculado a partir da rede docker "kind".
+metallb_addresses: []

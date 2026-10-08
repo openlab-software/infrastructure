@@ -1,0 +1,24 @@
+---
+- name: Verificar se o nó já entrou no cluster
+  stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubelet_conf
+
+- name: Aguardar a API do cluster ({{ k8s_api_endpoint }}:6443)
+  wait_for:
+    host: "{{ k8s_api_endpoint }}"
+    port: 6443
+    timeout: 120
+  when: not kubelet_conf.stat.exists
+
+- name: Entrar no cluster como control-plane
+  command: "{{ hostvars[groups['k8s_init'][0]].join_command_control_plane }}"
+  when:
+    - not kubelet_conf.stat.exists
+    - inventory_hostname in groups['k8s_control_plane']
+
+- name: Entrar no cluster como worker
+  command: "{{ hostvars[groups['k8s_init'][0]].join_command_worker }}"
+  when:
+    - not kubelet_conf.stat.exists
+    - inventory_hostname in groups['k8s_workers']

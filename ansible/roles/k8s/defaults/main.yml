@@ -1,0 +1,2 @@
+---
+k8s_version: "1.33"      # minor do repositório pkgs.k8s.io

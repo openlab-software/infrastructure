@@ -1,0 +1,28 @@
+---
+- name: Usar a StorageClass nativa do cluster
+  debug:
+    msg: "storage_provider=builtin: nada a instalar."
+  when: storage_provider == 'builtin'
+
+- name: Instalar NFS CSI e StorageClass
+  when: storage_provider == 'nfs-csi'
+  block:
+    - name: Adicionar repositório Helm do csi-driver-nfs
+      kubernetes.core.helm_repository:
+        name: csi-driver-nfs
+        repo_url: https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts
+
+    - name: Instalar/Atualizar csi-driver-nfs
+      kubernetes.core.helm:
+        name: csi-driver-nfs
+        chart_ref: csi-driver-nfs/csi-driver-nfs
+        chart_version: "{{ nfs_csi_chart_version | default(omit, true) }}"
+        release_namespace: kube-system
+        update_repo_cache: true
+        wait: true
+        wait_timeout: 5m
+
+    - name: Criar a StorageClass nfs-csi
+      kubernetes.core.k8s:
+        state: present
+        template: nfs-storageclass.yml.j2

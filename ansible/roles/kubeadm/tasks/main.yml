@@ -1,0 +1,7 @@
+---
+# Idempotente: init/join só rodam se o nó ainda não faz parte do cluster.
+- include_tasks: init.yml
+  when: inventory_hostname in groups['k8s_init']
+
+- include_tasks: join.yml
+  when: inventory_hostname not in groups['k8s_init']

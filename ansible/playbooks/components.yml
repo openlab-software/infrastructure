@@ -1,0 +1,78 @@
+---
+# Instala os componentes (plugins) ligados no ambiente, a partir da máquina de controle.
+# Fala com o cluster pelo kubeconfig do ambiente; não depende de SSH nem de como o cluster foi criado.
+#
+# Uso (pelo Makefile):
+#   make addons ENV=kind
+#   make addons ENV=prod ONLY=argocd            # só um (e as dependências dele)
+#   make addons ENV=prod ONLY=harbor,mongodb
+#   make addons ENV=prod EXTRA="-e argocd_cleanup=true"
+- name: Instalar componentes no cluster
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../components/catalog.yml
+  environment:
+    KUBECONFIG: "{{ kubeconfig }}"
+    K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
+  pre_tasks:
+    - name: Verificar o kubeconfig do ambiente
+      stat:
+        path: "{{ kubeconfig }}"
+      register: kubeconfig_file
+      tags: [always]
+
+    - name: Falhar se não existe cluster para este ambiente
+      assert:
+        that: kubeconfig_file.stat.exists
+        fail_msg: >-
+          Kubeconfig não encontrado em {{ kubeconfig }}.
+          Crie o cluster antes: make cluster ENV={{ env_name }}
+        quiet: true
+      tags: [always]
+
+    - name: Definir componentes pedidos (ONLY ou os ligados no ambiente)
+      set_fact:
+        _wanted: >-
+          {{ (components_only | default('') | string).split(',') | map('trim') | reject('equalto', '') | list
+             if (components_only | default('') | string | length > 0)
+             else components | dict2items | selectattr('value') | map(attribute='key') | list }}
+      tags: [always]
+
+    - name: Validar nomes dos componentes
+      assert:
+        that: _wanted | difference(catalog | map(attribute='name') | list) | length == 0
+        fail_msg: >-
+          Componente(s) desconhecido(s): {{ _wanted | difference(catalog | map(attribute='name') | list) }}.
+          Disponíveis: {{ catalog | map(attribute='name') | join(', ') }}
+        quiet: true
+      tags: [always]
+
+    # Fecho transitivo das dependências (ponto fixo: no máximo uma volta por componente)
+    - name: Resolver dependências
+      set_fact:
+        _wanted: >-
+          {{ (_wanted + (catalog | selectattr('name', 'in', _wanted) | map(attribute='requires', default=[]) | flatten)) | unique | list }}
+      loop: "{{ range(catalog | length) | list }}"
+      loop_control:
+        label: "passo {{ item }}"
+      tags: [always]
+
+    - name: Ordenar pela ordem do catálogo
+      set_fact:
+        selected_components: "{{ catalog | map(attribute='name') | select('in', _wanted) | list }}"
+      tags: [always]
+
+    - name: Componentes que serão instalados
+      debug:
+        msg: "{{ selected_components }}"
+      tags: [always]
+
+  tasks:
+    - name: "Componente"
+      include_role:
+        name: "{{ item }}"
+      loop: "{{ selected_components }}"
+      loop_control:
+        label: "{{ item }}"

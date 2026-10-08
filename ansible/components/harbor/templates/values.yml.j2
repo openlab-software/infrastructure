@@ -1,0 +1,13 @@
+expose:
+  type: ingress
+  tls:
+    enabled: false
+  ingress:
+    hosts:
+      core: {{ harbor_host }}
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+externalURL: "{{ harbor_external_url }}"
+harborAdminPassword: "{{ harbor_admin_password }}"

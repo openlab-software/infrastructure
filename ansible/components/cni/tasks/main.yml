@@ -1,0 +1,25 @@
+---
+- name: Baixar o manifesto do flannel
+  get_url:
+    url: "{{ flannel_manifest_url }}"
+    dest: "{{ lookup('env', 'TMPDIR') | default('/tmp', true) }}/kube-flannel.yml"
+    mode: "0644"
+    force: true
+  when: cni_provider == 'flannel'
+  register: flannel_manifest
+
+- name: Aplicar o flannel
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ flannel_manifest.dest }}"
+  when: cni_provider == 'flannel'
+
+- name: Aguardar todos os nós ficarem Ready
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+    wait: true
+    wait_condition:
+      type: Ready
+      status: "True"
+    wait_timeout: 300

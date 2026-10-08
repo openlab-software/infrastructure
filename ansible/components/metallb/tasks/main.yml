@@ -1,0 +1,51 @@
+---
+- name: Adicionar repositório Helm do MetalLB
+  kubernetes.core.helm_repository:
+    name: metallb
+    repo_url: https://metallb.github.io/metallb
+
+- name: Instalar/Atualizar MetalLB
+  kubernetes.core.helm:
+    name: metallb
+    chart_ref: metallb/metallb
+    chart_version: "{{ metallb_chart_version | default(omit, true) }}"
+    release_namespace: "{{ metallb_namespace }}"
+    create_namespace: true
+    update_repo_cache: true
+    wait: true
+    wait_timeout: 5m
+
+# kind: os IPs do pool precisam estar dentro da rede docker "kind"
+- name: Descobrir a rede docker do kind
+  command: docker network inspect kind
+  register: kind_network
+  changed_when: false
+  when: metallb_addresses | length == 0 and cluster_type == 'kind'
+
+- name: Definir o pool a partir da rede do kind
+  set_fact:
+    _metallb_addresses:
+      - >-
+        {{ _prefix }}.255.200-{{ _prefix }}.255.250
+  vars:
+    _subnet: "{{ (kind_network.stdout | from_json)[0].IPAM.Config | map(attribute='Subnet') | select('match', '^[0-9.]+/') | first }}"
+    _prefix: "{{ _subnet | regex_replace('^([0-9]+\.[0-9]+)\..*$', '\1') }}"
+  when: metallb_addresses | length == 0 and cluster_type == 'kind'
+
+- name: Usar o pool configurado no ambiente
+  set_fact:
+    _metallb_addresses: "{{ metallb_addresses }}"
+  when: metallb_addresses | length > 0
+
+- name: Validar o pool de endereços
+  assert:
+    that: _metallb_addresses is defined and _metallb_addresses | length > 0
+    fail_msg: Defina metallb_addresses em environments/{{ env_name }}/group_vars/all/main.yml
+    quiet: true
+
+- name: Criar IPAddressPool e L2Advertisement
+  kubernetes.core.k8s:
+    state: present
+    template:
+      - pool.yml.j2
+      - l2.yml.j2

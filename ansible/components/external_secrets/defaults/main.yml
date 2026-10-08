@@ -1,0 +1,3 @@
+---
+external_secrets_namespace: external-secrets
+external_secrets_chart_version: ""

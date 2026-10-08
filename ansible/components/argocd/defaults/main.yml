@@ -1,0 +1,19 @@
+---
+argocd_namespace: argocd
+argocd_chart_version: ""
+# true = apaga o namespace do ArgoCD antes de instalar (reset do zero)
+argocd_cleanup: false
+# Ingress opcional (no kind: http://argocd.<base_domain>)
+argocd_ingress_enabled: false
+argocd_ingress_host: "argocd.{{ base_domain | default('localhost') }}"
+argocd_extra_values: {}
+
+_argocd_ingress_values:
+  configs:
+    params:
+      server.insecure: true     # TLS (se houver) termina no ingress
+  server:
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hostname: "{{ argocd_ingress_host }}"

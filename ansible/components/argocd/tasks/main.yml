@@ -1,0 +1,56 @@
+---
+- name: Limpar namespace antigo do ArgoCD
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ argocd_namespace }}"
+    state: absent
+    wait: true
+    wait_timeout: 300
+  when: argocd_cleanup | bool
+
+- name: Adicionar repositório Helm do ArgoCD
+  kubernetes.core.helm_repository:
+    name: argo
+    repo_url: https://argoproj.github.io/argo-helm
+
+- name: Instalar/Atualizar ArgoCD
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argo/argo-cd
+    chart_version: "{{ argocd_chart_version | default(omit, true) }}"
+    release_namespace: "{{ argocd_namespace }}"
+    create_namespace: true
+    update_repo_cache: true
+    wait: true
+    wait_timeout: 5m
+    values: >-
+      {{ (_argocd_ingress_values if argocd_ingress_enabled | bool else {})
+         | combine(argocd_extra_values, recursive=True) }}
+
+- name: Recuperar senha inicial do admin
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: argocd-initial-admin-secret
+    namespace: "{{ argocd_namespace }}"
+  register: argocd_admin_secret
+  no_log: true
+
+- name: Mostrar como acessar o ArgoCD
+  debug:
+    msg:
+      - "ArgoCD instalado!"
+      - >-
+        Acesso: {{
+          'http://' ~ argocd_ingress_host
+          if argocd_ingress_enabled | bool
+          else 'kubectl port-forward svc/argocd-server -n ' ~ argocd_namespace ~ ' 8080:443  ->  https://localhost:8080'
+        }}
+      - "Usuário: admin"
+      - >-
+        Senha inicial: {{
+          (argocd_admin_secret.resources[0].data.password | b64decode)
+          if argocd_admin_secret.resources | length > 0
+          else 'secret argocd-initial-admin-secret não encontrado (já removido?)'
+        }}

@@ -1,0 +1,86 @@
+---
+- name: Verificar ferramentas necessárias
+  command: "which {{ item }}"
+  loop: [docker, kind, kubectl, helm]
+  changed_when: false
+  failed_when: false
+  register: kind_tools
+  tags: [always]
+
+- name: Falhar se faltar alguma ferramenta
+  assert:
+    that: kind_tools.results | map(attribute='rc') | select('ne', 0) | list | length == 0
+    fail_msg: >-
+      Ferramentas ausentes: {{ kind_tools.results | rejectattr('rc', 'equalto', 0) | map(attribute='item') | join(', ') }}.
+      Rode: make bootstrap  (e garanta que o Docker está rodando)
+    quiet: true
+  tags: [always]
+
+# Com poucos inotify instances o kubelet morre ("inotify_init: too many open files"),
+# típico no WSL/Linux quando há mais de um cluster kind.
+- name: Ler o limite de inotify instances
+  command: sysctl -n fs.inotify.max_user_instances
+  register: inotify_instances
+  changed_when: false
+  when: kind_state == 'present'
+
+- name: Falhar se o limite de inotify for baixo
+  assert:
+    that: inotify_instances.stdout | int >= kind_min_inotify_instances
+    fail_msg: >-
+      fs.inotify.max_user_instances={{ inotify_instances.stdout }} é baixo para o kind (mínimo {{ kind_min_inotify_instances }}).
+      Corrija com: sudo sysctl -w fs.inotify.max_user_instances=512
+      (permanente: make bootstrap)
+    quiet: true
+  when: kind_state == 'present'
+
+- name: Listar clusters kind existentes
+  command: kind get clusters
+  register: kind_clusters
+  changed_when: false
+
+- name: Criar o cluster kind
+  when: kind_state == 'present'
+  block:
+    - name: Gerar a configuração do kind
+      template:
+        src: kind-config.yaml.j2
+        dest: "{{ kubeconfig | dirname }}/kind-config.yaml"
+        mode: "0644"
+
+    - name: Criar o cluster {{ kind_cluster_name }}
+      command: >-
+        kind create cluster
+        --name {{ kind_cluster_name }}
+        --config {{ kubeconfig | dirname }}/kind-config.yaml
+        --kubeconfig {{ kubeconfig }}
+        --wait 180s
+      when: kind_cluster_name not in kind_clusters.stdout_lines
+
+    # Garante o kubeconfig mesmo quando o cluster já existia
+    - name: Exportar o kubeconfig
+      shell: kind get kubeconfig --name {{ kind_cluster_name }} > {{ kubeconfig }}
+      args:
+        creates: "{{ kubeconfig }}"
+
+    - name: Cluster pronto
+      debug:
+        msg:
+          - "Cluster kind '{{ kind_cluster_name }}' pronto."
+          - "kubeconfig: {{ kubeconfig }}"
+          - "Próximo passo: make addons ENV=kind"
+
+- name: Remover o cluster kind
+  when: kind_state == 'absent'
+  block:
+    - name: Apagar o cluster {{ kind_cluster_name }}
+      command: kind delete cluster --name {{ kind_cluster_name }}
+      when: kind_cluster_name in kind_clusters.stdout_lines
+
+    - name: Remover kubeconfig e configuração gerados
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ kubeconfig }}"
+        - "{{ kubeconfig | dirname }}/kind-config.yaml"

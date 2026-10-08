@@ -1,0 +1,9 @@
+---
+# Cria (ou, com -e kind_state=absent, remove) o cluster kind local: 1 control-plane + N workers.
+# Uso: make cluster ENV=kind   |   make destroy ENV=kind
+- name: Cluster kind local
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - kind

@@ -1,0 +1,7 @@
+---
+# nfs-csi  = instala o csi-driver-nfs e cria a StorageClass nfs-csi (padrão)
+# builtin  = não faz nada (o kind já traz a StorageClass "standard")
+storage_provider: nfs-csi
+nfs_server: nfsserver.lan
+nfs_share: /srv/nfs/k8s
+nfs_csi_chart_version: ""

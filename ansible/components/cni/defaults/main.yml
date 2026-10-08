@@ -1,0 +1,4 @@
+---
+cni_provider: flannel
+# Fixe uma versão (ex.: https://github.com/flannel-io/flannel/releases/download/<tag>/kube-flannel.yml) para builds reproduzíveis
+flannel_manifest_url: https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml

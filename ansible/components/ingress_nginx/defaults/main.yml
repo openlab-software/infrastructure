@@ -1,0 +1,22 @@
+---
+ingress_nginx_namespace: ingress-nginx
+ingress_nginx_chart_version: ""
+# loadbalancer = Service LoadBalancer (MetalLB, prod)
+# hostport     = controller no nó com label ingress-ready=true, exposto pelos extraPortMappings do kind
+ingress_nginx_mode: loadbalancer
+ingress_nginx_extra_values: {}
+
+_ingress_nginx_hostport_values:
+  controller:
+    hostPort:
+      enabled: true
+    service:
+      type: NodePort
+    publishService:
+      enabled: false
+    nodeSelector:
+      ingress-ready: "true"
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Equal
+        effect: NoSchedule
