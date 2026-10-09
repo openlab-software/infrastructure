@@ -14,7 +14,10 @@ spec:
             secretName: github-token-secret
             key: token
         filters:
-          - labelMatch: {{ github_topic_filter }}
+          # Descoberta por conteúdo: tem .devops/k8s e NÃO tem .devops/helm (se houver chart, o
+          # ApplicationSet abaixo assume). Os dois campos do mesmo filtro são combinados com AND.
+          - pathsExist: [{{ k8s_path }}]
+            pathsDoNotExist: [{{ helm_path }}]
   template:
     metadata:
       name: '{% raw %}{{- .repository -}}{% endraw %}'
@@ -29,7 +32,7 @@ spec:
       source:
         repoURL: '{% raw %}{{- .url -}}{% endraw %}'
         targetRevision: '{% raw %}{{- .branch -}}{% endraw %}'
-        path: .devops/k8s
+        path: {{ k8s_path }}
       destination:
         server: 'https://kubernetes.default.svc'
         namespace: '{% raw %}{{- .repository -}}{% endraw %}'
@@ -40,6 +43,52 @@ spec:
         syncOptions:
           - CreateNamespace=true
         # Re-tenta syncs que falharam (ex.: ExternalSecret ainda sem os secrets no Bitwarden)
+        retry:
+          limit: 5
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 10m
+---
+# Repos com {{ helm_path }}: o ArgoCD segue o chart Helm publicado no GHCR (OCI).
+# Sem Image Updater nem write-back no Git: a versão do chart (semver) é a fonte da tag da imagem.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: github-org-autodiscover-helm
+  namespace: {{ argocd_appset_namespace }}
+spec:
+  goTemplate: true
+  generators:
+    - scmProvider:
+        cloneProtocol: https
+        github:
+          organization: {{ github_org }}
+          tokenRef:
+            secretName: github-token-secret
+            key: token
+        filters:
+          - pathsExist: [{{ helm_path }}]
+  template:
+    metadata:
+      name: '{% raw %}{{- .repository -}}{% endraw %}'
+    spec:
+      project: default
+      source:
+        # Sem o esquema oci://; o chart tem o mesmo nome do repositório (GHCR exige minúsculas)
+        repoURL: {{ helm_chart_registry }}
+        chart: '{% raw %}{{- .repository | lower -}}{% endraw %}'
+        # Constraint semver: segue a maior versão publicada (pré-releases ficam de fora)
+        targetRevision: '{{ helm_chart_revision }}'
+      destination:
+        server: 'https://kubernetes.default.svc'
+        namespace: '{% raw %}{{- .repository -}}{% endraw %}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
         retry:
           limit: 5
           backoff:

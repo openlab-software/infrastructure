@@ -1,4 +1,12 @@
 ---
 argocd_appset_namespace: "{{ argocd_namespace | default('argocd') }}"
 github_org: openlab-software
-github_topic_filter: argocd
+# Descoberta por conteúdo do repositório (sem depender de topics do GitHub):
+#   .devops/helm -> chart Helm OCI publicado pela CI (tem prioridade)
+#   .devops/k8s  -> kustomize lido direto do Git, tag atualizada pelo Image Updater
+k8s_path: .devops/k8s
+helm_path: .devops/helm
+# Charts publicados pela CI como ghcr.io/<org>/charts/<repositório>
+helm_chart_registry: "ghcr.io/{{ github_org | lower }}/charts"
+# Constraint semver do chart; "*" = sempre a maior versão estável
+helm_chart_revision: "*"

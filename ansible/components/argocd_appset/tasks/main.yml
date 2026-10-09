@@ -20,6 +20,27 @@
         token: "{{ github_token }}"
   no_log: true
 
+# Credencial de repositório (por prefixo de URL) para o ArgoCD puxar charts Helm OCI do GHCR.
+# O token precisa de read:packages (o mesmo já usado pelo Image Updater no ghcr-creds).
+- name: Criar credencial do registry Helm OCI (GHCR)
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: ghcr-helm-oci-creds
+        namespace: "{{ argocd_appset_namespace }}"
+        labels:
+          argocd.argoproj.io/secret-type: repo-creds
+      stringData:
+        type: helm
+        url: "ghcr.io/{{ github_org | lower }}"
+        enableOCI: "true"
+        username: "{{ github_user }}"
+        password: "{{ github_token }}"
+  no_log: true
+
 # O template usa raw/endraw para não conflitar o Go template do ArgoCD com o Jinja
 - name: Criar ApplicationSet de autodiscover da organização
   kubernetes.core.k8s:
