@@ -44,11 +44,11 @@ spec:
           - CreateNamespace=true
         # Re-tenta syncs que falharam (ex.: ExternalSecret ainda sem os secrets no Bitwarden)
         retry:
-          limit: 5
+          limit: 2
           backoff:
             duration: 30s
             factor: 2
-            maxDuration: 10m
+            maxDuration: 2m
 ---
 # Repos com {{ helm_path }}: o ArgoCD segue o chart Helm publicado no GHCR (OCI).
 # Sem Image Updater nem write-back no Git: a versão do chart (semver) é a fonte da tag da imagem.
@@ -90,8 +90,8 @@ spec:
         syncOptions:
           - CreateNamespace=true
         retry:
-          limit: 5
+          limit: 2
           backoff:
             duration: 30s
             factor: 2
-            maxDuration: 10m
+            maxDuration: 2m
