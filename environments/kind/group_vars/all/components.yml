@@ -7,6 +7,7 @@ components:
   ingress_nginx: true
   storage: false
   cert_manager: true
+  istio: false
   monitoring: true
   loki: true
   tempo: true

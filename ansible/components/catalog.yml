@@ -16,6 +16,9 @@ catalog:
     description: StorageClass padrão (NFS CSI no prod; no kind usa a do próprio kind)
   - name: cert_manager
     description: cert-manager
+  - name: istio
+    description: Service mesh (Istio) com mTLS automático entre os pods
+    requires: [cert_manager]
   - name: monitoring
     description: Prometheus + Grafana + Alertmanager (kube-prometheus-stack)
   - name: loki

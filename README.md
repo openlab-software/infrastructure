@@ -66,6 +66,7 @@ scripts/select_components.py   menu do `make select`
 | `ingress_nginx` | ingress-nginx | |
 | `storage` | NFS CSI + StorageClass `nfs-csi` (prod) ou nada (kind) | |
 | `cert_manager` | cert-manager | |
+| `istio` | Istio (base + istiod) e `PeerAuthentication` global; mTLS em `PERMISSIVE` por padrão (`istio_mtls_mode`) | `cert_manager` |
 | `monitoring` | kube-prometheus-stack: Prometheus, Alertmanager e Grafana | |
 | `loki` | Loki (logs, modo monolítico) | |
 | `tempo` | Tempo (traces, modo single binary) | |

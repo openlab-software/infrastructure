@@ -1,0 +1,38 @@
+---
+- name: Adicionar repositório Helm do Istio
+  kubernetes.core.helm_repository:
+    name: istio
+    repo_url: https://istio-release.storage.googleapis.com/charts
+
+- name: Instalar os CRDs do Istio (base)
+  kubernetes.core.helm:
+    name: istio-base
+    chart_ref: istio/base
+    chart_version: "{{ istio_chart_version | default(omit, true) }}"
+    release_namespace: "{{ istio_namespace }}"
+    create_namespace: true
+    update_repo_cache: true
+    wait: true
+    wait_timeout: 5m
+
+- name: Instalar o control plane (istiod)
+  kubernetes.core.helm:
+    name: istiod
+    chart_ref: istio/istiod
+    chart_version: "{{ istio_chart_version | default(omit, true) }}"
+    release_namespace: "{{ istio_namespace }}"
+    wait: true
+    wait_timeout: 5m
+
+- name: Definir o modo de mTLS do mesh
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: security.istio.io/v1
+      kind: PeerAuthentication
+      metadata:
+        name: default
+        namespace: "{{ istio_namespace }}"
+      spec:
+        mtls:
+          mode: "{{ istio_mtls_mode }}"

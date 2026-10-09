@@ -1,0 +1,6 @@
+---
+istio_namespace: istio-system
+istio_chart_version: ""
+# PERMISSIVE aceita mTLS e texto puro (use enquanto migra os namespaces);
+# STRICT recusa tudo que não for mTLS.
+istio_mtls_mode: PERMISSIVE
