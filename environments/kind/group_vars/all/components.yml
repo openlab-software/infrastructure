@@ -9,8 +9,8 @@ components:
   cert_manager: true
   istio: false
   monitoring: true
-  loki: true
-  tempo: true
+  loki: false
+  tempo: false
   opentelemetry: true
   external_secrets: true
   argocd: true

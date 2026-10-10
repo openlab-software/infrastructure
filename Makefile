@@ -31,7 +31,7 @@ help: ## Mostra esta ajuda
 check-env:
 	@test -d "$(ENV_DIR)" || { echo "Ambiente '$(ENV)' não existe. Disponíveis: $$(ls $(ROOT)/environments | tr '\n' ' ')"; exit 1; }
 
-bootstrap: ## Prepara a máquina de controle (kubectl, helm, kind, coleções do Ansible)
+bootstrap: ## Prepara a máquina de controle (docker, kubectl, helm, kind, coleções do Ansible)
 	cd $(ANSIBLE_DIR) && ansible-playbook -i localhost, playbooks/bootstrap.yml --ask-become-pass
 
 infra: check-env ## [prod] Cria/atualiza as VMs no Proxmox (Terraform) e gera o inventory

@@ -1,5 +1,5 @@
 ---
-# Prepara a máquina de controle (Ubuntu/Debian/WSL) para o Makefile: kind, kubectl, helm e coleções.
+# Prepara a máquina de controle (Ubuntu/Debian/WSL) para o Makefile: docker, kind, kubectl, helm e coleções.
 # Usa só módulos nativos: as coleções ainda não existem quando este playbook é lido.
 # Requer o ansible já instalado (sudo apt install -y ansible). Idempotente.
 #
@@ -69,7 +69,43 @@
         path: /usr/local/bin/kind
       register: kind_bin
 
-    # O kind precisa do Docker rodando (Docker Desktop com integração WSL, ou docker engine)
+    # O kind precisa do Docker rodando. Se já houver um docker no PATH (Docker Desktop com
+    # integração WSL, ou engine instalado à parte), não mexe.
+    - name: Verificar se o Docker já está instalado
+      command: sh -c 'command -v docker'
+      register: docker_bin
+      changed_when: false
+      failed_when: false
+
+    # docker.io = pacote da própria distro: dispensa repositório externo e funciona em
+    # versões do Ubuntu que o repositório da Docker ainda não suporta.
+    - name: Instalar o Docker
+      become: true
+      apt:
+        name:
+          - docker.io
+          - docker-buildx
+          - util-linux-extra
+        state: present
+      when: docker_bin.rc != 0
+
+    - name: Iniciar o Docker
+      become: true
+      service:
+        name: docker
+        state: started
+        enabled: true
+      when: docker_bin.rc != 0
+
+    # Com become o ansible_user vira root; o usuário real vem do ambiente (SUDO_USER se rodou via sudo)
+    - name: Adicionar o usuário ao grupo docker
+      become: true
+      user:
+        name: "{{ lookup('env', 'SUDO_USER') or lookup('env', 'USER') }}"
+        groups: docker
+        append: true
+      when: docker_bin.rc != 0
+
     - name: Instalar o kind
       become: true
       get_url:
