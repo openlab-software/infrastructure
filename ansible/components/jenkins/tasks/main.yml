@@ -4,15 +4,40 @@
     name: jenkins
     repo_url: https://charts.jenkins.io
 
+- name: Criar namespace {{ jenkins_namespace }}
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ jenkins_namespace }}"
+
+- name: Senha do admin do Jenkins (Bitwarden)
+  include_role:
+    name: credentials
+    tasks_from: initial_password
+  vars:
+    initial_password_secret: jenkins-admin
+    initial_password_namespace: "{{ jenkins_namespace }}"
+    initial_password_data:
+      jenkins-admin-user: admin
+      jenkins-admin-password: !unsafe "{{ .password }}"
+
 - name: Instalar/Atualizar Jenkins
   kubernetes.core.helm:
     name: jenkins
     chart_ref: jenkins/jenkins
     chart_version: "{{ jenkins_chart_version | default(omit, true) }}"
     release_namespace: "{{ jenkins_namespace }}"
-    create_namespace: true
     update_repo_cache: true
     wait: true
     wait_timeout: 10m
     values_files:
       - "{{ role_path }}/files/values.yml"
+    # Admin vindo do Bitwarden (Secret jenkins-admin, criado pelo ESO) em vez do admin/admin do values.yml
+    values:
+      controller:
+        admin:
+          createSecret: false
+          existingSecret: jenkins-admin

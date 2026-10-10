@@ -1,0 +1,16 @@
+# Prometheus coleta /q/metrics (Micrometer) de todo serviço Quarkus do cluster, em qualquer namespace
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: quarkus-services
+  namespace: {{ observability_namespace }}
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/managed-by: quarkus
+  endpoints:
+    - port: http
+      path: /q/metrics
+      interval: 30s

@@ -10,8 +10,6 @@ prometheus_storage_size: 10Gi
 grafana_storage_size: 2Gi
 grafana_ingress_enabled: true
 grafana_host: "grafana.{{ base_domain | default('localhost') }}"
-# Vazio = reaproveita o Secret grafana-admin do cluster ou gera uma senha aleatória
-grafana_admin_password: ""
 # etcd, scheduler, controller-manager e kube-proxy ficam em 127.0.0.1 no kubeadm/kind: gerariam alertas falsos
 monitoring_scrape_control_plane: false
 monitoring_extra_values: {}

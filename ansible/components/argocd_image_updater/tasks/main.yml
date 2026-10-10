@@ -1,38 +1,28 @@
 ---
-- name: Carregar credenciais do GitHub
+# Só carrega as variáveis do role (github_user, UUID do PAT); o token em si não passa pelo Ansible
+- name: Carregar variáveis de credenciais
   include_role:
     name: credentials
     public: true
-  vars:
-    credentials_require_github: true
 
-# Credencial do registry (user:token) e do git write-back (username/password)
-- name: Criar secret ghcr-creds
+# ghcr-creds (registry) e git-creds (write-back), vindos do Bitwarden via ESO
+- name: Criar ExternalSecrets com o GitHub PAT
   kubernetes.core.k8s:
     state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: ghcr-creds
-        namespace: "{{ argocd_image_updater_namespace }}"
-      stringData:
-        creds: "{{ github_user }}:{{ github_token }}"
-  no_log: true
+    template: github-externalsecrets.yml.j2
 
-- name: Criar secret git-creds
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: git-creds
-        namespace: "{{ argocd_image_updater_namespace }}"
-      stringData:
-        username: "{{ github_user }}"
-        password: "{{ github_token }}"
-  no_log: true
+- name: Aguardar a sincronização dos ExternalSecrets
+  kubernetes.core.k8s_info:
+    api_version: external-secrets.io/v1
+    kind: ExternalSecret
+    name: "{{ item }}"
+    namespace: "{{ argocd_image_updater_namespace }}"
+    wait: true
+    wait_condition:
+      type: Ready
+      status: "True"
+    wait_timeout: 120
+  loop: [ghcr-creds, git-creds]
 
 # Chart 0.x = configuração por annotations (a 1.x migrou para o CRD ImageUpdater)
 - name: Instalar/Atualizar ArgoCD Image Updater

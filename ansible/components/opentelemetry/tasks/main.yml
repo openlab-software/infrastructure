@@ -53,8 +53,25 @@
   until: otel_agent is succeeded
   when: "'loki' in (selected_components | default([]))"
 
+- name: Criar o Instrumentation Node.js compartilhado
+  kubernetes.core.k8s:
+    state: present
+    template: instrumentation.yml.j2
+  register: otel_instrumentation
+  retries: 12
+  delay: 10
+  until: otel_instrumentation is succeeded
+
+# A CRD ServiceMonitor vem do kube-prometheus-stack
+- name: Criar o ServiceMonitor dos serviços Quarkus
+  kubernetes.core.k8s:
+    state: present
+    template: servicemonitor-quarkus.yml.j2
+  when: "'monitoring' in (selected_components | default([]))"
+
 - name: Endpoint OTLP para as aplicações
   debug:
     msg:
       - "OTLP gRPC: http://otel-gateway-collector.{{ observability_namespace }}.svc.cluster.local:4317"
       - "OTLP HTTP: http://otel-gateway-collector.{{ observability_namespace }}.svc.cluster.local:4318"
+      - "Node.js: anotação instrumentation.opentelemetry.io/inject-nodejs: \"{{ observability_namespace }}/nodejs\""

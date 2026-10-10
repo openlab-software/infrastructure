@@ -2,6 +2,7 @@
 # Catálogo dos componentes instalados no cluster (plugins).
 # - A ordem desta lista é a ordem de instalação.
 # - `requires`: dependências, adicionadas automaticamente mesmo se desligadas.
+#   Quem cria senha ou token via Bitwarden depende de external_secrets (vem antes na lista).
 # - Cada componente é um role em components/<name>/ (tasks/, defaults/, templates/, files/).
 # Quais ficam ligados é definido por ambiente em
 # environments/<env>/group_vars/all/components.yml (ou `make select ENV=<env>`).
@@ -16,11 +17,21 @@ catalog:
     description: StorageClass padrão (NFS CSI no prod; no kind usa a do próprio kind)
   - name: cert_manager
     description: cert-manager
+  - name: external_secrets
+    description: External Secrets Operator ligado ao Bitwarden Secrets Manager
+    requires: [cert_manager]
+  - name: postgres
+    description: PostgreSQL (namespace database)
+    requires: [external_secrets]
+  - name: rabbitmq
+    description: RabbitMQ com management (namespace messaging)
+    requires: [external_secrets]
   - name: istio
     description: Service mesh (Istio) com mTLS automático entre os pods
     requires: [cert_manager]
   - name: monitoring
     description: Prometheus + Grafana + Alertmanager (kube-prometheus-stack)
+    requires: [external_secrets]
   - name: loki
     description: Loki (logs)
   - name: tempo
@@ -28,20 +39,21 @@ catalog:
   - name: opentelemetry
     description: OpenTelemetry Operator + Collector (gateway OTLP para traces/métricas/logs e agente de logs)
     requires: [cert_manager]
-  - name: external_secrets
-    description: External Secrets Operator ligado ao Bitwarden Secrets Manager
-    requires: [cert_manager]
   - name: argocd
     description: ArgoCD (GitOps)
+    requires: [external_secrets]
   - name: argocd_image_updater
     description: ArgoCD Image Updater (atualiza imagens do GHCR via git write-back)
-    requires: [argocd]
+    requires: [argocd, external_secrets]
   - name: argocd_appset
     description: ApplicationSet que descobre os repositórios da organização no GitHub
-    requires: [argocd]
+    requires: [argocd, external_secrets]
   - name: harbor
     description: Harbor (container registry)
+    requires: [external_secrets]
   - name: mongodb
     description: MongoDB (Bitnami, replica set)
+    requires: [external_secrets]
   - name: jenkins
     description: Jenkins
+    requires: [external_secrets]

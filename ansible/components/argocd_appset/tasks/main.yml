@@ -1,45 +1,28 @@
 ---
-- name: Carregar credenciais do GitHub
+# Só carrega as variáveis do role (github_user, UUID do PAT); o token em si não passa pelo Ansible
+- name: Carregar variáveis de credenciais
   include_role:
     name: credentials
     public: true
-  vars:
-    credentials_require_github: true
 
-- name: Criar secret github-token-secret (usado pelo generator scmProvider)
+# github-token-secret (generator scmProvider) e ghcr-helm-oci-creds, vindos do Bitwarden via ESO
+- name: Criar ExternalSecrets com o GitHub PAT
   kubernetes.core.k8s:
     state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: github-token-secret
-        namespace: "{{ argocd_appset_namespace }}"
-      type: Opaque
-      stringData:
-        token: "{{ github_token }}"
-  no_log: true
+    template: github-externalsecrets.yml.j2
 
-# Credencial de repositório (por prefixo de URL) para o ArgoCD puxar charts Helm OCI do GHCR.
-# O token precisa de read:packages (o mesmo já usado pelo Image Updater no ghcr-creds).
-- name: Criar credencial do registry Helm OCI (GHCR)
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: ghcr-helm-oci-creds
-        namespace: "{{ argocd_appset_namespace }}"
-        labels:
-          argocd.argoproj.io/secret-type: repo-creds
-      stringData:
-        type: helm
-        url: "ghcr.io/{{ github_org | lower }}"
-        enableOCI: "true"
-        username: "{{ github_user }}"
-        password: "{{ github_token }}"
-  no_log: true
+- name: Aguardar a sincronização dos ExternalSecrets
+  kubernetes.core.k8s_info:
+    api_version: external-secrets.io/v1
+    kind: ExternalSecret
+    name: "{{ item }}"
+    namespace: "{{ argocd_appset_namespace }}"
+    wait: true
+    wait_condition:
+      type: Ready
+      status: "True"
+    wait_timeout: 120
+  loop: [github-token-secret, ghcr-helm-oci-creds]
 
 # O template usa raw/endraw para não conflitar o Go template do ArgoCD com o Jinja
 - name: Criar ApplicationSet de autodiscover da organização

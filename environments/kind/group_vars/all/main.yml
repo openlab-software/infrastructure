@@ -23,8 +23,3 @@ ingress_nginx_mode: hostport
 storage_provider: builtin
 argocd_ingress_enabled: true
 metallb_addresses: []        # vazio = calculado da rede docker "kind"
-
-# Senhas de desenvolvimento (só valem no kind)
-harbor_admin_password: admin
-mongodb_root_password: dev-root
-mongodb_password: dev-user

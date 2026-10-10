@@ -1,8 +1,8 @@
 auth:
-  rootPassword: "{{ mongodb_root_password }}"
-  username: {{ mongodb_username }}
-  password: "{{ mongodb_password }}"
-  database: {{ mongodb_database }}
+  usernames: [{{ mongodb_username }}]
+  databases: [{{ mongodb_database }}]
+  # root, usuário e replica set key vindos do Bitwarden (Secret mongodb-auth, criado pelo ESO)
+  existingSecret: mongodb-auth
 
 persistence:
   enabled: true

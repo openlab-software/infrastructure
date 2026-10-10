@@ -1,0 +1,32 @@
+---
+- name: Criar namespace {{ postgres_namespace }}
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ postgres_namespace }}"
+
+- name: Senha do Postgres (Bitwarden)
+  include_role:
+    name: credentials
+    tasks_from: initial_password
+  vars:
+    initial_password_secret: postgres-admin
+    initial_password_namespace: "{{ postgres_namespace }}"
+    initial_password_data:
+      password: !unsafe "{{ .password }}"
+
+- name: Instalar/Atualizar Postgres
+  kubernetes.core.k8s:
+    state: present
+    template: postgres.yml.j2
+    wait: true
+    wait_timeout: 300
+
+- name: Mostrar como acessar o Postgres
+  debug:
+    msg:
+      - "Host: postgres.{{ postgres_namespace }}.svc.cluster.local:5432 (banco {{ postgres_database }})"
+      - "Usuário: {{ postgres_user }} / senha inicial guardada no Bitwarden"

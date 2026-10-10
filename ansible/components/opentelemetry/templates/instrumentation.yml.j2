@@ -1,0 +1,17 @@
+# Auto-instrumentação Node.js compartilhada. Pods de qualquer namespace a usam com a anotação
+#   instrumentation.opentelemetry.io/inject-nodejs: "{{ observability_namespace }}/nodejs"
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: nodejs
+  namespace: {{ observability_namespace }}
+spec:
+  # O auto-instrumentation do Node usa OTLP/HTTP (porta 4318 do coletor gateway)
+  exporter:
+    endpoint: http://otel-gateway-collector.{{ observability_namespace }}.svc.cluster.local:4318
+  propagators:
+    - tracecontext
+    - baggage
+  sampler:
+    type: parentbased_traceidratio
+    argument: "1"

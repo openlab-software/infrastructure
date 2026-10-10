@@ -1,0 +1,33 @@
+---
+- name: Criar namespace {{ rabbitmq_namespace }}
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ rabbitmq_namespace }}"
+
+- name: Senha do RabbitMQ (Bitwarden)
+  include_role:
+    name: credentials
+    tasks_from: initial_password
+  vars:
+    initial_password_secret: rabbitmq-admin
+    initial_password_namespace: "{{ rabbitmq_namespace }}"
+    initial_password_data:
+      password: !unsafe "{{ .password }}"
+
+- name: Instalar/Atualizar RabbitMQ
+  kubernetes.core.k8s:
+    state: present
+    template: rabbitmq.yml.j2
+    wait: true
+    wait_timeout: 300
+
+- name: Mostrar como acessar o RabbitMQ
+  debug:
+    msg:
+      - "AMQP: rabbitmq.{{ rabbitmq_namespace }}.svc.cluster.local:5672"
+      - "Management: kubectl -n {{ rabbitmq_namespace }} port-forward svc/rabbitmq 15672  ->  http://localhost:15672"
+      - "Usuário: {{ rabbitmq_user }} / senha inicial guardada no Bitwarden"

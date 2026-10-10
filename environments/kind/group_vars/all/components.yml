@@ -13,6 +13,8 @@ components:
   tempo: false
   opentelemetry: true
   external_secrets: true
+  postgres: true
+  rabbitmq: true
   argocd: true
   argocd_image_updater: true
   argocd_appset: true

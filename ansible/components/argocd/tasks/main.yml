@@ -28,14 +28,30 @@
       {{ (_argocd_ingress_values if argocd_ingress_enabled | bool else {})
          | combine(argocd_extra_values, recursive=True) }}
 
-- name: Recuperar senha inicial do admin
-  kubernetes.core.k8s_info:
+# Senha do admin vinda do Bitwarden: o ESO grava o bcrypt no argocd-secret (criado pelo chart).
+# OnChange: o htpasswd gera um salt novo a cada execução; sincronizar só quando o ExternalSecret
+# muda evita reescrever o hash (e o passwordMtime, que derruba as sessões) a cada refresh.
+- name: Senha do admin do ArgoCD (Bitwarden)
+  include_role:
+    name: credentials
+    tasks_from: initial_password
+  vars:
+    initial_password_secret: argocd-secret
+    initial_password_namespace: "{{ argocd_namespace }}"
+    initial_password_creation_policy: Merge
+    initial_password_refresh_policy: OnChange
+    initial_password_data:
+      admin.password: !unsafe '{{ htpasswd "admin" .password "bcrypt" | trimPrefix "admin:" }}'
+      admin.passwordMtime: !unsafe '{{ now | dateInZone "2006-01-02T15:04:05Z" "UTC" }}'
+
+# Só existe enquanto o admin.password não foi definido; agora ficaria com uma senha que não vale mais
+- name: Remover argocd-initial-admin-secret
+  kubernetes.core.k8s:
+    state: absent
     api_version: v1
     kind: Secret
     name: argocd-initial-admin-secret
     namespace: "{{ argocd_namespace }}"
-  register: argocd_admin_secret
-  no_log: true
 
 - name: Mostrar como acessar o ArgoCD
   debug:
@@ -48,9 +64,4 @@
           else 'kubectl port-forward svc/argocd-server -n ' ~ argocd_namespace ~ ' 8080:443  ->  https://localhost:8080'
         }}
       - "Usuário: admin"
-      - >-
-        Senha inicial: {{
-          (argocd_admin_secret.resources[0].data.password | b64decode)
-          if argocd_admin_secret.resources | length > 0
-          else 'secret argocd-initial-admin-secret não encontrado (já removido?)'
-        }}
+      - "Senha: a senha inicial guardada no Bitwarden"

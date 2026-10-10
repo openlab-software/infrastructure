@@ -4,6 +4,25 @@
     name: harbor
     repo_url: https://helm.goharbor.io
 
+- name: Criar namespace {{ harbor_namespace }}
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ harbor_namespace }}"
+
+- name: Senha do admin do Harbor (Bitwarden)
+  include_role:
+    name: credentials
+    tasks_from: initial_password
+  vars:
+    initial_password_secret: harbor-admin
+    initial_password_namespace: "{{ harbor_namespace }}"
+    initial_password_data:
+      HARBOR_ADMIN_PASSWORD: !unsafe "{{ .password }}"
+
 - name: Instalar/Atualizar Harbor
   kubernetes.core.helm:
     name: harbor

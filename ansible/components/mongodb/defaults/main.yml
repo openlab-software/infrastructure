@@ -4,6 +4,3 @@ mongodb_chart_version: ""
 mongodb_username: user
 mongodb_database: mongo
 mongodb_storage_size: 8Gi
-# Segredos: nunca no Git. Exporte MONGODB_ROOT_PASSWORD / MONGODB_PASSWORD ou passe com -e.
-mongodb_root_password: "{{ lookup('env', 'MONGODB_ROOT_PASSWORD') }}"
-mongodb_password: "{{ lookup('env', 'MONGODB_PASSWORD') }}"

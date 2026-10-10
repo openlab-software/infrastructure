@@ -66,18 +66,20 @@ scripts/select_components.py   menu do `make select`
 | `ingress_nginx` | ingress-nginx | |
 | `storage` | NFS CSI + StorageClass `nfs-csi` (prod) ou nada (kind) | |
 | `cert_manager` | cert-manager | |
+| `external_secrets` | External Secrets Operator + ClusterSecretStore do Bitwarden | `cert_manager` |
 | `istio` | Istio (base + istiod) e `PeerAuthentication` global; mTLS em `PERMISSIVE` por padrão (`istio_mtls_mode`) | `cert_manager` |
-| `monitoring` | kube-prometheus-stack: Prometheus, Alertmanager e Grafana | |
+| `postgres` | PostgreSQL 15 (StatefulSet) no namespace `database` | `external_secrets` |
+| `rabbitmq` | RabbitMQ 3 com management (StatefulSet) no namespace `messaging` | `external_secrets` |
+| `monitoring` | kube-prometheus-stack: Prometheus, Alertmanager e Grafana | `external_secrets` |
 | `loki` | Loki (logs, modo monolítico) | |
 | `tempo` | Tempo (traces, modo single binary) | |
-| `opentelemetry` | OpenTelemetry Operator + coletor gateway (OTLP) + agente de logs | `cert_manager` |
-| `external_secrets` | External Secrets Operator + ClusterSecretStore do Bitwarden | `cert_manager` |
-| `argocd` | ArgoCD | |
-| `argocd_image_updater` | ArgoCD Image Updater | `argocd` |
-| `argocd_appset` | ApplicationSet que descobre os repositórios da organização | `argocd` |
-| `harbor` | Harbor | |
-| `mongodb` | MongoDB (Bitnami) | |
-| `jenkins` | Jenkins | |
+| `opentelemetry` | OpenTelemetry Operator + coletor gateway (OTLP) + agente de logs + `Instrumentation` Node.js e `ServiceMonitor` dos serviços Quarkus | `cert_manager` |
+| `argocd` | ArgoCD | `external_secrets` |
+| `argocd_image_updater` | ArgoCD Image Updater | `argocd`, `external_secrets` |
+| `argocd_appset` | ApplicationSet que descobre os repositórios da organização | `argocd`, `external_secrets` |
+| `harbor` | Harbor | `external_secrets` |
+| `mongodb` | MongoDB (Bitnami) | `external_secrets` |
+| `jenkins` | Jenkins | `external_secrets` |
 
 Dependências são adicionadas sozinhas: `ONLY=argocd_appset` também instala `argocd`.
 
@@ -104,10 +106,12 @@ Ligue `monitoring`, `loki`, `tempo` e `opentelemetry` (já estão ligados nos do
                          Grafana lê Prometheus, Loki e Tempo (datasources já provisionados)
 ```
 
-- **Grafana:** `http://grafana.<base_domain>` (kind: `grafana.localtest.me`). Usuário `admin`; a senha é gerada
-  uma vez e fica no Secret `grafana-admin` (ou defina `grafana_admin_password`). O `make addons` imprime a senha.
+- **Grafana:** `http://grafana.<base_domain>` (kind: `grafana.localtest.me`). Usuário `admin`, senha inicial do Bitwarden.
 - **Endpoint OTLP para as aplicações:** `http://otel-gateway-collector.observability.svc.cluster.local:4317` (gRPC) ou `:4318` (HTTP).
-- **Métricas das aplicações:** crie um `ServiceMonitor` ou `PodMonitor` em qualquer namespace; o Prometheus descobre todos.
+- **Métricas das aplicações:** serviços Quarkus (label `app.kubernetes.io/managed-by: quarkus`, porta `http`) já são
+  coletados em `/q/metrics` pelo `ServiceMonitor` `quarkus-services` (namespace `observability`). Para o resto,
+  crie um `ServiceMonitor` ou `PodMonitor` em qualquer namespace; o Prometheus descobre todos.
+- **Auto-instrumentação Node.js:** anote o pod com `instrumentation.opentelemetry.io/inject-nodejs: "observability/nodejs"`.
 - **Datasources:** Loki e Tempo só são criados no Grafana se esses componentes estiverem selecionados. Sem eles,
   o gateway manda o sinal para o exporter `debug` (aparece no log do coletor).
 - **Logs → traces:** os logs das aplicações devem conter `traceId=<id>`; o Grafana liga o log ao trace (derived field).
@@ -115,13 +119,28 @@ Ligue `monitoring`, `loki`, `tempo` e `opentelemetry` (já estão ligados nos do
   recomendado para o Prometheus (locking); prefira outra StorageClass via `monitoring_extra_values`.
 - **Kind:** a stack completa pede alguns GB de RAM. Para um kind leve, desligue `loki`/`tempo` em `make select ENV=kind`.
 
+## Postgres e RabbitMQ
+
+Compartilhados pelas aplicações (o `erp` usa os dois). Usuário `root`, senha inicial do Bitwarden.
+
+- **Postgres:** `postgres.database.svc.cluster.local:5432`, banco `postgres_database` (padrão `erp`).
+- **RabbitMQ:** `rabbitmq.messaging.svc.cluster.local:5672`; management via
+  `kubectl -n messaging port-forward svc/rabbitmq 15672`.
+- Dados em PVC (StorageClass padrão). As aplicações levam a senha num `ExternalSecret` próprio apontando
+  para o mesmo secret do Bitwarden.
+
 ## Segredos
 
 - **Bitwarden**: `external_secrets` pede o access token da machine account (prompt, ou
-  `BWS_ACCESS_TOKEN` no ambiente). O PAT do GitHub vem do Bitwarden, ou de `GITHUB_TOKEN` se definido.
-  O token só é pedido quando um componente que precisa dele está ligado.
-- **MongoDB**: `MONGODB_ROOT_PASSWORD` e `MONGODB_PASSWORD` no ambiente (no kind há senhas de dev).
-- **Harbor**: `harbor_admin_password` (padrão `admin`; troque no prod).
+  `BWS_ACCESS_TOKEN` no ambiente). O token só é pedido quando um componente que precisa dele está ligado.
+- **GitHub PAT**: guardado no Bitwarden (`bitwarden_github_pat_secret_id`). `argocd_appset` e
+  `argocd_image_updater` criam `ExternalSecret`s que o ESO sincroniza a cada `github_token_refresh_interval`;
+  o token não passa pelo Ansible e uma rotação no Bitwarden chega sozinha ao cluster.
+- **Senha inicial**: um único secret do Bitwarden (`bitwarden_initial_password_secret_id`) é a senha do
+  `admin` do ArgoCD, Grafana, Harbor e Jenkins, do `root` do Postgres e do RabbitMQ e do root/usuário do MongoDB. Cada componente cria um
+  `ExternalSecret` (`roles/credentials/tasks/initial_password.yml`) e o chart lê o Secret gerado; o Ansible
+  nunca vê o valor. No ArgoCD o ESO grava o bcrypt direto no `argocd-secret`.
+  Os apps só usam a senha na primeira inicialização: trocar no Bitwarden não muda a senha de quem já subiu.
 - **Terraform**: `terraform/terraform.tfvars` (modelo em `terraform.tfvars.example`, ignorado pelo Git).
 
 ## Diferenças entre os ambientes

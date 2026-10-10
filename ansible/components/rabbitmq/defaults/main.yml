@@ -1,0 +1,6 @@
+---
+rabbitmq_namespace: messaging
+rabbitmq_image: rabbitmq:3-management
+# Usuário criado na primeira inicialização (os serviços do erp usam root)
+rabbitmq_user: root
+rabbitmq_storage_size: 2Gi

@@ -13,39 +13,17 @@
       metadata:
         name: "{{ monitoring_namespace }}"
 
-# Senha do Grafana: vem de grafana_admin_password, do Secret já existente ou é gerada uma vez.
-- name: Ler o Secret grafana-admin
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Secret
-    name: grafana-admin
-    namespace: "{{ monitoring_namespace }}"
-  register: grafana_secret
-  no_log: true
-
-- name: Definir a senha do Grafana
-  set_fact:
-    _grafana_password: >-
-      {{ grafana_admin_password
-         if grafana_admin_password | length > 0
-         else (grafana_secret.resources[0].data['admin-password'] | b64decode
-               if grafana_secret.resources | length > 0
-               else lookup('password', '/dev/null length=24 chars=ascii_letters,digits')) }}
-  no_log: true
-
-- name: Criar/atualizar o Secret grafana-admin
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: grafana-admin
-        namespace: "{{ monitoring_namespace }}"
-      stringData:
-        admin-user: admin
-        admin-password: "{{ _grafana_password }}"
-  no_log: true
+# Senha do Grafana vinda do Bitwarden (o chart lê o Secret grafana-admin via admin.existingSecret)
+- name: Senha do admin do Grafana (Bitwarden)
+  include_role:
+    name: credentials
+    tasks_from: initial_password
+  vars:
+    initial_password_secret: grafana-admin
+    initial_password_namespace: "{{ monitoring_namespace }}"
+    initial_password_data:
+      admin-user: admin
+      admin-password: !unsafe "{{ .password }}"
 
 - name: Instalar/Atualizar kube-prometheus-stack
   kubernetes.core.helm:
@@ -75,4 +53,4 @@
     msg:
       - "Grafana: {{ 'http://' ~ grafana_host if grafana_ingress_enabled | bool else 'kubectl -n ' ~ monitoring_namespace ~ ' port-forward svc/' ~ monitoring_release ~ '-grafana 3000:80' }}"
       - "Usuário: admin"
-      - "Senha: {{ _grafana_password }}"
+      - "Senha: a senha inicial guardada no Bitwarden"

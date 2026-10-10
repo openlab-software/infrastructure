@@ -10,4 +10,6 @@ expose:
       nginx.ingress.kubernetes.io/ssl-redirect: "true"
 
 externalURL: "{{ harbor_external_url }}"
-harborAdminPassword: "{{ harbor_admin_password }}"
+# Senha do admin vinda do Bitwarden (Secret harbor-admin, criado pelo ESO)
+existingSecretAdminPassword: harbor-admin
+existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
