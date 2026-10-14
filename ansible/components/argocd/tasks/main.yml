@@ -42,7 +42,7 @@
     initial_password_refresh_policy: OnChange
     initial_password_data:
       admin.password: !unsafe '{{ htpasswd "admin" .password "bcrypt" | trimPrefix "admin:" }}'
-      admin.passwordMtime: !unsafe '{{ now | dateInZone "2006-01-02T15:04:05Z" "UTC" }}'
+      admin.passwordMtime: !unsafe '{{ dateInZone "2006-01-02T15:04:05Z" now "UTC" }}'
 
 # Só existe enquanto o admin.password não foi definido; agora ficaria com uma senha que não vale mais
 - name: Remover argocd-initial-admin-secret
